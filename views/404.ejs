@@ -1,0 +1,12 @@
+<% var pageTitle = 'Not Found'; %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="card text-center">
+    <h1>404</h1>
+    <p class="subtitle"><%= message || 'Page not found.' %></p>
+    <a href="/register" class="btn">Go to Registration Form</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

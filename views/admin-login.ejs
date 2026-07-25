@@ -1,0 +1,30 @@
+<% var pageTitle = 'Admin Login'; %>
+<%- include('partials/header') %>
+
+<div class="container login-wrap">
+  <div class="card login-card">
+    <div class="login-icon">🔐</div>
+    <h1 class="text-center">Admin Login</h1>
+    <p class="subtitle text-center">Sign in to view registered records and QR codes.</p>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/admin/login" method="POST">
+      <div class="field" style="margin-bottom:16px;">
+        <label>Username</label>
+        <input type="text" name="username" required placeholder="admin" autofocus />
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="••••••••" />
+      </div>
+      <button type="submit" class="btn btn-block">Login</button>
+    </form>
+
+    <p class="small-note">Default demo login: <strong>admin / admin123</strong><br />Change this in your .env file before going live.</p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

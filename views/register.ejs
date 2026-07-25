@@ -1,0 +1,83 @@
+<% var pageTitle = 'Register - QR Registration App'; %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="card">
+    <h1>User Registration</h1>
+    <p class="subtitle">Fill in your details below. After saving, you'll get a unique QR code that links to your profile.</p>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/register" method="POST" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" name="name" required value="<%= formData.name || '' %>" placeholder="e.g. John Carter" />
+        </div>
+
+        <div class="field">
+          <label>Phone Number <span class="req">*</span></label>
+          <input type="tel" name="phone" required value="<%= formData.phone || '' %>" placeholder="e.g. 9876543210" />
+        </div>
+
+        <div class="field">
+          <label>Email</label>
+          <input type="email" name="email" value="<%= formData.email || '' %>" placeholder="e.g. john@email.com" />
+        </div>
+
+        <div class="field">
+          <label>Date of Birth</label>
+          <input type="date" name="dob" value="<%= formData.dob || '' %>" />
+        </div>
+
+        <div class="field">
+          <label>Gender</label>
+          <select name="gender">
+            <option value="">Select</option>
+            <option value="Male" <%= formData.gender === 'Male' ? 'selected' : '' %>>Male</option>
+            <option value="Female" <%= formData.gender === 'Female' ? 'selected' : '' %>>Female</option>
+            <option value="Other" <%= formData.gender === 'Other' ? 'selected' : '' %>>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Location / City <span class="req">*</span></label>
+          <input type="text" name="location" required value="<%= formData.location || '' %>" placeholder="e.g. Vadodara, Gujarat" />
+        </div>
+
+        <div class="field">
+          <label>Education</label>
+          <input type="text" name="education" value="<%= formData.education || '' %>" placeholder="e.g. B.Tech Computer Science" />
+        </div>
+
+        <div class="field full">
+          <label>Address</label>
+          <input type="text" name="address" value="<%= formData.address || '' %>" placeholder="Full address" />
+        </div>
+
+        <div class="field">
+          <label>Occupation</label>
+          <input type="text" name="occupation" value="<%= formData.occupation || '' %>" placeholder="e.g. Software Engineer" />
+        </div>
+
+        <div class="field">
+          <label>Photo (optional)</label>
+          <input type="file" name="photo" accept="image/*" />
+        </div>
+
+        <div class="field full">
+          <label>Additional Notes</label>
+          <textarea name="notes" placeholder="Anything else you'd like to add..."><%= formData.notes || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button type="submit" class="btn btn-block">Save & Generate QR Code</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

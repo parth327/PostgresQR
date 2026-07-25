@@ -1,0 +1,71 @@
+<% var pageTitle = 'Admin Dashboard'; var isAdmin = true; %>
+<%- include('partials/header') %>
+
+<div class="wide-container">
+  <h1>Admin Dashboard</h1>
+  <p class="subtitle">Welcome, <%= adminUsername %>. Below is every user record saved through the registration form.</p>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="num"><%= total %></div>
+      <div class="lbl">Total Registered Users</div>
+    </div>
+    <div class="stat-card">
+      <div class="num"><%= records.length %></div>
+      <div class="lbl">Showing (filtered)</div>
+    </div>
+  </div>
+
+  <form class="search-bar" method="GET" action="/admin/dashboard">
+    <input type="text" name="search" value="<%= search %>" placeholder="Search by name, location, education, phone or email..." />
+    <button type="submit" class="btn">Search</button>
+    <% if (search) { %><a href="/admin/dashboard" class="btn btn-secondary">Clear</a><% } %>
+  </form>
+
+  <% if (records.length === 0) { %>
+    <div class="empty-state card">
+      <p>No records found<% if (search) { %> for "<%= search %>"<% } %>.</p>
+      <a href="/register" class="btn" style="margin-top:12px;">Open Registration Form</a>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>QR</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Education</th>
+            <th>Phone</th>
+            <th>Registered On</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% records.forEach(function(r) { %>
+            <tr>
+              <td><img src="<%= r.qrUrl %>" class="mini-qr" alt="qr" /></td>
+              <td><%= r.name %></td>
+              <td><%= r.location %></td>
+              <td><%= r.education || '-' %></td>
+              <td><%= r.phone %></td>
+              <td><%= new Date(r.createdAt).toLocaleDateString() %></td>
+              <td>
+                <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
+                <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
+                <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
+                      onsubmit="return confirm('Delete this record permanently?');">
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <p class="small-note">Share this registration link with users: <strong><%= baseUrl %>/register</strong></p>
+</div>
+
+<%- include('partials/footer') %>
