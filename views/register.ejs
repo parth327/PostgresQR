@@ -62,12 +62,12 @@
           <input type="text" name="occupation" value="<%= formData.occupation || '' %>" placeholder="e.g. Software Engineer" />
         </div>
 
-        <div class="field">
+        <div class="field" style="display:none;">
           <label>Photo (optional)</label>
           <input type="file" name="photo" accept="image/*" />
         </div>
 
-        <div class="field full">
+        <div class="field full" style="display:none;">
           <label>Additional Notes</label>
           <textarea name="notes" placeholder="Anything else you'd like to add..."><%= formData.notes || '' %></textarea>
         </div>
