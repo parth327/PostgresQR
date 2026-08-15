@@ -8,7 +8,9 @@ const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
-
+app.get('/healthz', function(req, res) {
+  res.status(200).send('OK');
+});
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
