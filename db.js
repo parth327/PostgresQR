@@ -83,7 +83,7 @@ async function getQr(id) {
 async function addRecord(record) {
   await pool.query(
     `INSERT INTO records
-      (id, name, dob, gender, phone, email, location, address, education, occupation, pincode, photo_data, photo_mime, qr_data, created_at,notes)
+      (id, name, dob, gender, phone, email, location, address, education, occupation, notes, photo_data, photo_mime, qr_data, created_at,pincode)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
     [
       record.id,
