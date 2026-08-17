@@ -37,6 +37,7 @@
             <th>Location</th>
             <th>Education</th>
             <th>Phone</th>
+            <th>Pincode</th>
             <th>Registered On</th>
             <th>Actions</th>
           </tr>
@@ -49,6 +50,7 @@
               <td><%= r.location %></td>
               <td><%= r.education || '-' %></td>
               <td><%= r.phone %></td>
+              <td><%= r.pincode %></td>
               <td><%= new Date(r.createdAt).toLocaleDateString() %></td>
               <td>
                 <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
