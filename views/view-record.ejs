@@ -22,7 +22,8 @@
     <div class="detail-row"><span class="label">Date of Birth</span><span class="value"><%= record.dob || '-' %></span></div>
     <div class="detail-row"><span class="label">Gender</span><span class="value"><%= record.gender || '-' %></span></div>
     <div class="detail-row"><span class="label">Address</span><span class="value"><%= record.address || '-' %></span></div>
-    <% if (record.notes) { %>
+    <div class="detail-row"><span class="label">PinCode</span><span class="value"><%= record.pincode || '-' %></span></div>
+<% if (record.notes) { %>
       <div class="detail-row"><span class="label">Notes</span><span class="value"><%= record.notes %></span></div>
     <% } %>
     <div class="detail-row"><span class="label">Registered On</span><span class="value"><%= new Date(record.createdAt).toLocaleString() %></span></div>
