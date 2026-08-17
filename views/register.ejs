@@ -28,7 +28,7 @@
         </div>
 
         <div class="field">
-          <label>Date of Birth</label>
+          <label>Date of Birth <span class="req">*</span></label>
           <input type="date" required name="dob" value="<%= formData.dob || '' %>" />
         </div>
 
@@ -57,7 +57,7 @@
           <input type="text" name="address" value="<%= formData.address || '' %>" placeholder="Full address" />
         </div>
         <div class="field">
-          <label>PinCode</label>
+          <label>PinCode <span class="req">*</span></label>
           <input type="text" required name="pincode" value="<%= formData.pincode || '' %>" placeholder="Ex.382330" />
         </div>
         <div class="field" style="display:none;">
