@@ -41,7 +41,7 @@ router.post('/register', (req, res) => {
     }
 
     try {
-      const { name, dob, gender, phone, email, location, address, education, occupation, notes } = req.body;
+      const { name, dob, gender, phone, email, location, address, education, occupation, notes,pincode } = req.body;
 
       if (!name || !name.trim() || !phone || !phone.trim() || !location || !location.trim()) {
         return res.render('register', {
@@ -72,6 +72,7 @@ router.post('/register', (req, res) => {
         photoMime: req.file ? req.file.mimetype : null,
         qrData: qrBuffer.toString('base64'),
         createdAt,
+        pincode : pincode,
       };
 
       await db.addRecord(record);
