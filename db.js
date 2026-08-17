@@ -25,11 +25,11 @@ async function init() {
       education TEXT,
       occupation TEXT,
       notes TEXT,
-      pincode TEXT NOT NULL,
       photo_data TEXT,
       photo_mime TEXT,
       qr_data TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      pincode TEXT NOT NULL
     );
   `);
   console.log('Database ready (records table checked/created).');
@@ -49,10 +49,10 @@ function rowToRecord(row) {
     education: row.education || '',
     occupation: row.occupation || '',
     notes: row.notes || '',
-    pincode: row.pincode,
     photoMime: row.photo_mime || null,
     hasPhoto: !!row.photo_data,
     createdAt: row.created_at,
+    pincode: row.pincode,    
   };
 }
 
@@ -83,7 +83,7 @@ async function getQr(id) {
 async function addRecord(record) {
   await pool.query(
     `INSERT INTO records
-      (id, name, dob, gender, phone, email, location, address, education, occupation, notes,pincode, photo_data, photo_mime, qr_data, created_at)
+      (id, name, dob, gender, phone, email, location, address, education, occupation, pincode, photo_data, photo_mime, qr_data, created_at,notes)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
     [
       record.id,
@@ -97,11 +97,11 @@ async function addRecord(record) {
       record.education || null,
       record.occupation || null,
       record.notes || null,
-      record.pincode,
       record.photoData || null,
       record.photoMime || null,
       record.qrData,
       record.createdAt,
+      record.pincode,
     ]
   );
   return record;
