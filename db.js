@@ -24,7 +24,7 @@ async function init() {
       address TEXT,
       education TEXT,
       occupation TEXT,
-      notes TEXT,
+      notes TEXT,pincode TEXT NOT NULL,
       photo_data TEXT,
       photo_mime TEXT,
       qr_data TEXT NOT NULL,
@@ -47,7 +47,7 @@ function rowToRecord(row) {
     address: row.address || '',
     education: row.education || '',
     occupation: row.occupation || '',
-    notes: row.notes || '',
+    notes: row.notes || '',pincode: row.pincode,
     photoMime: row.photo_mime || null,
     hasPhoto: !!row.photo_data,
     createdAt: row.created_at,
@@ -81,7 +81,7 @@ async function getQr(id) {
 async function addRecord(record) {
   await pool.query(
     `INSERT INTO records
-      (id, name, dob, gender, phone, email, location, address, education, occupation, notes, photo_data, photo_mime, qr_data, created_at)
+      (id, name, dob, gender, phone, email, location, address, education, occupation, notes,pincode, photo_data, photo_mime, qr_data, created_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
     [
       record.id,
@@ -94,7 +94,7 @@ async function addRecord(record) {
       record.address || null,
       record.education || null,
       record.occupation || null,
-      record.notes || null,
+      record.notes || null,record.pincode,
       record.photoData || null,
       record.photoMime || null,
       record.qrData,
