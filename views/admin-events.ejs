@@ -109,7 +109,7 @@
             <div style="flex: 1;">
               <h3 style="margin: 0 0 0.5rem 0;"><%= event.event_name %></h3>
               <p class="event-date">
-                📅 <%= new Date(event.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+                📅 <%= formatEventDate(event.event_date) %>
               </p>
               <p style="margin: 0.5rem 0;">📍 <strong>Location:</strong> <%= event.location || 'N/A' %></p>
               <% if (event.max_capacity) { %>
