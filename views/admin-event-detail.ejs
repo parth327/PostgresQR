@@ -189,39 +189,62 @@
     </div>
 
     <div class="attendance-section">
-      <h2>✓ Attendance List</h2>
-      
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <h2 style="margin: 0;">✓ Attendance List</h2>
+        <% if (attendance.length > 0) { %>
+          <a href="/admin/events/<%= event.id %>/export" class="btn btn-secondary" style="padding: 0.5rem 1rem;">⬇ Export to Excel</a>
+        <% } %>
+      </div>
+
       <% if (attendance.length === 0) { %>
         <div class="empty-state">
           <p>No users have checked in yet.</p>
         </div>
       <% } else { %>
-        <table class="attendance-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Location</th>
-              <th>Checked In</th>
-              <th>By Admin</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% attendance.forEach(person => { %>
+        <div class="table-wrap">
+          <table class="attendance-table">
+            <thead>
               <tr>
-                <td><strong><%= person.name %></strong></td>
-                <td><%= person.phone %></td>
-                <td><%= person.email || '—' %></td>
-                <td><%= person.location %></td>
-                <td>
-                  <small><%= new Date(person.checked_in_at).toLocaleString('en-IN') %></small>
-                </td>
-                <td><small><%= person.checked_in_by %></small></td>
+                <th>Name</th>
+                <th>DOB</th>
+                <th>Gender</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Location</th>
+                <th>Pincode</th>
+                <th>Address</th>
+                <th>Education</th>
+                <th>Occupation</th>
+                <th>Notes</th>
+                <th>Temperature</th>
+                <th>Checked In</th>
+                <th>By Admin</th>
               </tr>
-            <% }); %>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <% attendance.forEach(person => { %>
+                <tr>
+                  <td><strong><%= person.name %></strong></td>
+                  <td><small><%= person.dob || '—' %></small></td>
+                  <td><small><%= person.gender || '—' %></small></td>
+                  <td><%= person.phone %></td>
+                  <td><%= person.email || '—' %></td>
+                  <td><%= person.location || '—' %></td>
+                  <td><small><%= person.pincode || '—' %></small></td>
+                  <td><small><%= person.address || '—' %></small></td>
+                  <td><small><%= person.education || '—' %></small></td>
+                  <td><small><%= person.occupation || '—' %></small></td>
+                  <td><small><%= person.record_notes || '—' %></small></td>
+                  <td><small><%= person.temperature || '—' %></small></td>
+                  <td>
+                    <small><%= new Date(person.checked_in_at).toLocaleString('en-IN') %></small>
+                  </td>
+                  <td><small><%= person.checked_in_by %></small></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
       <% } %>
     </div>
 
