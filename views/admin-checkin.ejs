@@ -260,7 +260,7 @@
     <% } else { %>
       <div class="checkin-header">
         <h1>✓ Check-In: <%= event.event_name %></h1>
-        <p>📅 <%= new Date(event.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        <p>📅 <%= formatEventDate(event.event_date) %></p>
         <% if (event.location) { %>
           <p>📍 <%= event.location %></p>
         <% } %>
@@ -330,7 +330,7 @@
                   <p>📍 <%= person.location %></p>
                 <% } %>
                 <p class="checkin-time">
-                  ✓ <%= new Date(person.checked_in_at).toLocaleTimeString('en-IN') %>
+                  ✓ <%= formatTime(person.checked_in_at) %>
                 </p>
                 <p class="checkin-by">By: <%= person.checked_in_by %></p>
                 <button 
