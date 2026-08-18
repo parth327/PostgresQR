@@ -93,12 +93,7 @@
   <div class="form-container">
     <h1>Create New Event</h1>
     
-    <% if (error) { %>
-      <div class="error-message">
-        <strong>❌ Error:</strong> <%= error %>
-      </div>
-    <% } %>
-
+  
     <form method="POST" action="/admin/events/create">
       <div class="form-group">
         <label for="eventName">
