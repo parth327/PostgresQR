@@ -4,6 +4,7 @@ const config = require('../config');
 const db = require('../db');
 const requireAdmin = require('../middleware/requireAdmin');
 const { verifyPassword } = require('../utils/auth');
+const { sendExcelFile, safeFilename } = require('../utils/excel');
 
 const router = express.Router();
 
@@ -148,6 +149,168 @@ router.post('/events/create', requireAdmin, async (req, res, next) => {
     });
 
     res.redirect('/admin/events');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ==================== EXCEL EXPORT ROUTES ====================
+// NOTE: /events/export is defined here, before GET /events/:id below,
+// so Express doesn't match "export" as an :id value.
+
+// GET /admin/dashboard/export -> export the users list (respects ?search=)
+router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
+  try {
+    const search = (req.query.search || '').trim();
+    const records = search ? await db.searchRecords(search) : await db.getAllRecords();
+
+    const rows = records.map((r) => ({
+      name: r.name,
+      phone: r.phone,
+      email: r.email,
+      gender: r.gender,
+      dob: r.dob,
+      location: r.location,
+      pincode: r.pincode,
+      address: r.address,
+      education: r.education,
+      occupation: r.occupation,
+      notes: r.notes,
+      hasPhoto: r.hasPhoto ? 'Yes' : 'No',
+      createdAt: new Date(r.createdAt).toLocaleString('en-IN'),
+      profileLink: `${config.baseUrl}/view/${r.id}`,
+      id: r.id,
+    }));
+
+    await sendExcelFile(res, {
+      filename: `users${search ? '-search-' + safeFilename(search) : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Users',
+      title: 'Registered Users',
+      subtitle: `${records.length} user${records.length === 1 ? '' : 's'}${search ? ` matching "${search}"` : ''} \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      columns: [
+        { header: 'Name', key: 'name', width: 22 },
+        { header: 'Phone', key: 'phone', width: 15 },
+        { header: 'Email', key: 'email', width: 26 },
+        { header: 'Gender', key: 'gender', width: 12 },
+        { header: 'DOB', key: 'dob', width: 14 },
+        { header: 'Location', key: 'location', width: 18 },
+        { header: 'Pincode', key: 'pincode', width: 12 },
+        { header: 'Address', key: 'address', width: 30 },
+        { header: 'Education', key: 'education', width: 20 },
+        { header: 'Occupation', key: 'occupation', width: 20 },
+        { header: 'Notes', key: 'notes', width: 28 },
+        { header: 'Has Photo', key: 'hasPhoto', width: 12 },
+        { header: 'Registered On', key: 'createdAt', width: 22 },
+        { header: 'Profile Link', key: 'profileLink', width: 36, hyperlink: true },
+        { header: 'Record ID', key: 'id', width: 30 },
+      ],
+      rows,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/events/export -> export the events list
+router.get('/events/export', requireAdmin, async (req, res, next) => {
+  try {
+    const events = await db.getAllEventsWithAttendanceCounts();
+
+    const rows = events.map((e) => ({
+      name: e.event_name,
+      date: new Date(e.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      status: (e.status || '').toUpperCase(),
+      location: e.location,
+      maxCapacity: e.max_capacity,
+      checkedInCount: e.checked_in_count,
+      description: e.event_description,
+      createdAt: new Date(e.created_at).toLocaleString('en-IN'),
+      id: e.id,
+    }));
+
+    await sendExcelFile(res, {
+      filename: `events-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Events',
+      title: 'Events',
+      headerColor: 'FF0066CC',
+      subtitle: `${events.length} event${events.length === 1 ? '' : 's'} \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      columns: [
+        { header: 'Event Name', key: 'name', width: 28 },
+        { header: 'Date', key: 'date', width: 20 },
+        { header: 'Status', key: 'status', width: 14 },
+        { header: 'Location', key: 'location', width: 22 },
+        { header: 'Max Capacity', key: 'maxCapacity', width: 14 },
+        { header: 'Checked-In Count', key: 'checkedInCount', width: 17 },
+        { header: 'Description', key: 'description', width: 34 },
+        { header: 'Created On', key: 'createdAt', width: 22 },
+        { header: 'Event ID', key: 'id', width: 30 },
+      ],
+      rows,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/events/:id/export -> export one event's attendance list (full user details)
+router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
+  try {
+    const event = await db.getEventById(req.params.id);
+    if (!event) return res.status(404).render('404', { message: 'Event not found' });
+
+    const attendance = await db.getEventAttendance(req.params.id);
+
+    const rows = attendance.map((p) => ({
+      name: p.name,
+      phone: p.phone,
+      email: p.email,
+      gender: p.gender,
+      dob: p.dob,
+      location: p.location,
+      pincode: p.pincode,
+      address: p.address,
+      education: p.education,
+      occupation: p.occupation,
+      recordNotes: p.record_notes,
+      checkedInAt: new Date(p.checked_in_at).toLocaleString('en-IN'),
+      checkedInBy: p.checked_in_by,
+      temperature: p.temperature,
+      attendanceNotes: p.attendance_notes,
+      recordId: p.record_id,
+    }));
+
+    const eventDateStr = new Date(event.event_date).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    await sendExcelFile(res, {
+      filename: `${safeFilename(event.event_name)}-attendance-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Attendance',
+      title: `${event.event_name} \u2014 Attendance`,
+      headerColor: 'FF0066CC',
+      subtitle: `${eventDateStr}${event.location ? ' \u2022 ' + event.location : ''} \u2022 ${attendance.length} checked in \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      columns: [
+        { header: 'Name', key: 'name', width: 22 },
+        { header: 'Phone', key: 'phone', width: 15 },
+        { header: 'Email', key: 'email', width: 26 },
+        { header: 'Gender', key: 'gender', width: 12 },
+        { header: 'DOB', key: 'dob', width: 14 },
+        { header: 'Location', key: 'location', width: 18 },
+        { header: 'Pincode', key: 'pincode', width: 12 },
+        { header: 'Address', key: 'address', width: 30 },
+        { header: 'Education', key: 'education', width: 20 },
+        { header: 'Occupation', key: 'occupation', width: 20 },
+        { header: 'Notes', key: 'recordNotes', width: 26 },
+        { header: 'Checked-In At', key: 'checkedInAt', width: 22 },
+        { header: 'Checked-In By', key: 'checkedInBy', width: 16 },
+        { header: 'Temperature', key: 'temperature', width: 13 },
+        { header: 'Attendance Notes', key: 'attendanceNotes', width: 26 },
+        { header: 'Record ID', key: 'recordId', width: 30 },
+      ],
+      rows,
+    });
   } catch (err) {
     next(err);
   }
