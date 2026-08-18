@@ -6,6 +6,7 @@ const config = require('./config');
 const db = require('./db');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
+const { formatEventDate, formatShortDate, formatDateTime, formatTime } = require('./utils/datetime');
 
 const app = express();
 app.get('/healthz', function(req, res) {
@@ -14,6 +15,14 @@ app.get('/healthz', function(req, res) {
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Make IST-aware date/time formatters available in every EJS template
+// (e.g. <%= formatDateTime(person.checked_in_at) %>) without each route
+// having to pass them through res.render() individually.
+app.locals.formatEventDate = formatEventDate;
+app.locals.formatShortDate = formatShortDate;
+app.locals.formatDateTime = formatDateTime;
+app.locals.formatTime = formatTime;
 
 // Body parsing
 app.use(express.urlencoded({ extended: true }));
