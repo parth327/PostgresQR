@@ -200,6 +200,17 @@ async function getAllEvents() {
   return rows;
 }
 
+async function getAllEventsWithAttendanceCounts() {
+  const { rows } = await pool.query(
+    `SELECT e.*, COUNT(ea.id)::int AS checked_in_count
+     FROM events e
+     LEFT JOIN event_attendance ea ON ea.event_id = e.id
+     GROUP BY e.id
+     ORDER BY e.event_date DESC`
+  );
+  return rows;
+}
+
 async function getEventById(eventId) {
   const { rows } = await pool.query(
     `SELECT * FROM events WHERE id = $1`,
@@ -264,12 +275,20 @@ async function getEventAttendance(eventId) {
        ea.id,
        ea.checked_in_at,
        ea.checked_in_by,
+       ea.temperature,
+       ea.notes AS attendance_notes,
        r.id as record_id,
        r.name,
+       r.dob,
+       r.gender,
        r.phone,
        r.email,
        r.location,
-       r.education
+       r.address,
+       r.education,
+       r.occupation,
+       r.pincode,
+       r.notes AS record_notes
      FROM event_attendance ea
      JOIN records r ON ea.record_id = r.id
      WHERE ea.event_id = $1
@@ -350,6 +369,7 @@ module.exports = {
   // Event functions
   createEvent,
   getAllEvents,
+  getAllEventsWithAttendanceCounts,
   getEventById,
   getEventByDate,
   updateEventStatus,
