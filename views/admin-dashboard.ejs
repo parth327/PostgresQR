@@ -65,7 +65,7 @@
               <td><%= r.education || '-' %></td>
               <td><%= r.phone %></td>
               <td><%= r.pincode %></td>
-              <td><%= new Date(r.createdAt).toLocaleDateString() %></td>
+              <td><%= formatShortDate(r.createdAt) %></td>
               <td>
                 <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
                 <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
