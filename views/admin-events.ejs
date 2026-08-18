@@ -92,7 +92,10 @@
         <h1>Events</h1>
         <p style="color: #666; margin-top: 0.5rem;">Logged in as: <strong><%= adminUsername %></strong></p>
       </div>
-      <a href="/admin/events/create" class="btn btn-primary">+ New Event</a>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="/admin/events/export" class="btn btn-secondary">⬇ Export to Excel</a>
+        <a href="/admin/events/create" class="btn btn-primary">+ New Event</a>
+      </div>
     </div>
 
     <% if (events.length === 0) { %>
