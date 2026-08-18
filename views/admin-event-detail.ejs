@@ -147,7 +147,7 @@
     <div class="event-info">
       <p>
         <strong>📅 Date:</strong> 
-        <%= new Date(event.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+        <%= formatEventDate(event.event_date) %>
       </p>
       <% if (event.location) { %>
         <p><strong>📍 Location:</strong> <%= event.location %></p>
@@ -176,13 +176,13 @@
         <div class="stat-card">
           <div class="stat-label">First Check-In</div>
           <div style="font-size: 1.2rem; margin-top: 0.5rem; font-weight: bold;">
-            <%= new Date(stats.first_checkin).toLocaleTimeString('en-IN') %>
+            <%= formatTime(stats.first_checkin) %>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Last Check-In</div>
           <div style="font-size: 1.2rem; margin-top: 0.5rem; font-weight: bold;">
-            <%= new Date(stats.last_checkin).toLocaleTimeString('en-IN') %>
+            <%= formatTime(stats.last_checkin) %>
           </div>
         </div>
       <% } %>
@@ -237,7 +237,7 @@
                   <td><small><%= person.record_notes || '—' %></small></td>
                   <td><small><%= person.temperature || '—' %></small></td>
                   <td>
-                    <small><%= new Date(person.checked_in_at).toLocaleString('en-IN') %></small>
+                    <small><%= formatDateTime(person.checked_in_at) %></small>
                   </td>
                   <td><small><%= person.checked_in_by %></small></td>
                 </tr>
