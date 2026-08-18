@@ -28,6 +28,28 @@
     <% } %>
     <div class="detail-row"><span class="label">Registered On</span><span class="value"><%= new Date(record.createdAt).toLocaleString() %></span></div>
 
+<% if (isAdmin && attendanceHistory && attendanceHistory.length > 0) { %>
+  <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #ddd;">
+    <h3>📊 Attendance History</h3>
+    <ul style="list-style: none; padding: 0;">
+      <% attendanceHistory.forEach(event => { %>
+        <li style="
+          padding: 0.75rem;
+          margin-bottom: 0.5rem;
+          background: #f9f9f9;
+          border-left: 4px solid #0066cc;
+          border-radius: 4px;
+        ">
+          <strong><%= event.event_name %></strong><br>
+          📅 <%= new Date(event.event_date).toLocaleDateString('en-IN') %><br>
+          📍 <%= event.location %><br>
+          <small style="color: #666;">✓ Checked in: <%= new Date(event.checked_in_at).toLocaleString('en-IN') %></small>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+<% } %>
+
     <% if (isAdmin) { %>
       <div class="actions-row">
         <img src="<%= qrUrl %>" class="mini-qr" alt="qr" style="width:60px;height:60px;" />
