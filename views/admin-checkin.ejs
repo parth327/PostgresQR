@@ -306,8 +306,13 @@
       </div>
 
       <div class="attendance-section">
-        <h2>👥 Attendees (<%= attendance.length %>/<%= event.max_capacity || '∞' %>)</h2>
-        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <h2 style="margin: 0;">👥 Attendees (<%= attendance.length %>/<%= event.max_capacity || '∞' %>)</h2>
+          <% if (attendance.length > 0) { %>
+            <a href="/admin/events/<%= event.id %>/export" class="btn btn-secondary" style="padding: 0.5rem 1rem;">⬇ Export to Excel</a>
+          <% } %>
+        </div>
+
         <% if (attendance.length === 0) { %>
           <div class="empty-state">
             <p>No one checked in yet. Start scanning QR codes!</p>
