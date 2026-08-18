@@ -33,6 +33,7 @@
     <input type="text" name="search" value="<%= search %>" placeholder="Search by name, location, education, phone or email..." />
     <button type="submit" class="btn">Search</button>
     <% if (search) { %><a href="/admin/dashboard" class="btn btn-secondary">Clear</a><% } %>
+    <a href="/admin/dashboard/export<%= search ? '?search=' + encodeURIComponent(search) : '' %>" class="btn btn-secondary">⬇ Export to Excel</a>
   </form>
 
   <% if (records.length === 0) { %>
