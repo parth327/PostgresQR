@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Check-In</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: #f5f5f5;
+    }
+    .checkin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .checkin-header {
+      background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .checkin-header h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+    }
+    .checkin-header p {
+      margin: 0.5rem 0;
+      opacity: 0.9;
+    }
+    .header-stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    .scanner-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      border: 2px solid #0066cc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .scanner-section h2 {
+      margin-top: 0;
+      color: #0066cc;
+    }
+    #video {
+      width: 100%;
+      max-width: 500px;
+      height: 400px;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      background: #000;
+    }
+    .camera-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .camera-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    #startBtn {
+      background: #28a745;
+      color: white;
+    }
+    #startBtn:hover {
+      background: #218838;
+    }
+    #stopBtn {
+      background: #dc3545;
+      color: white;
+      display: none;
+    }
+    #stopBtn:hover {
+      background: #c82333;
+    }
+    .manual-checkin {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .manual-checkin input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .manual-checkin button {
+      padding: 0.75rem 1.5rem;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .manual-checkin button:hover {
+      background: #0052a3;
+    }
+    #result {
+      min-height: 20px;
+      margin-top: 1rem;
+    }
+    #messageContainer {
+      margin-bottom: 1.5rem;
+    }
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 1rem;
+      border-radius: 4px;
+      border: 1px solid #f5c6cb;
+    }
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 1rem;
+      border-radius: 4px;
+      border: 1px solid #c3e6cb;
+    }
+    .attendance-section h2 {
+      color: #333;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    .attendance-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .attendee-card {
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s;
+    }
+    .attendee-card:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .attendee-card h4 {
+      margin: 0 0 0.5rem 0;
+      color: #333;
+      font-size: 1.1rem;
+    }
+    .attendee-card p {
+      margin: 0.35rem 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .attendee-card strong {
+      color: #333;
+    }
+    .checkin-time {
+      color: #28a745;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+    .checkin-by {
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: 0.5rem;
+    }
+    .remove-btn {
+      background: #dc3545;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .remove-btn:hover {
+      background: #c82333;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #999;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      display: inline-block;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <div class="checkin-container">
+    <% if (!event) { %>
+      <div style="background: #f9f9f9; padding: 2rem; border-radius: 8px; text-align: center;">
+        <h2>📋 No Event Found</h2>
+        <p><%= error %></p>
+        <a href="/admin/events" class="btn btn-primary">Go to Events</a>
+      </div>
+    <% } else { %>
+      <div class="checkin-header">
+        <h1>✓ Check-In: <%= event.event_name %></h1>
+        <p>📅 <%= new Date(event.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        <% if (event.location) { %>
+          <p>📍 <%= event.location %></p>
+        <% } %>
+        
+        <div class="header-stats">
+          <div class="stat-item">
+            <div class="stat-value"><%= stats.total_checked_in %></div>
+            <div class="stat-label">Checked In</div>
+          </div>
+          <% if (event.max_capacity) { %>
+            <div class="stat-item">
+              <div class="stat-value"><%= event.max_capacity %></div>
+              <div class="stat-label">Capacity</div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div id="messageContainer"></div>
+
+      <div class="scanner-section">
+        <h2>🎯 Scan QR Code or Enter User ID</h2>
+        
+        <h3>Camera Scanner</h3>
+        <div class="camera-controls">
+          <button id="startBtn" class="camera-btn" onclick="startScanner()">📷 Start Camera</button>
+          <button id="stopBtn" class="camera-btn" onclick="stopScanner()">🛑 Stop Camera</button>
+        </div>
+        <video id="video" style="display: none;"></video>
+        <div id="result"></div>
+
+        <h3>Manual Entry</h3>
+        <div class="manual-checkin">
+          <input 
+            type="text" 
+            id="manualInput" 
+            placeholder="Paste/scan user ID here or type it"
+            onkeypress="handleManualInput(event)"
+            autocomplete="off"
+          >
+          <button onclick="performCheckIn()">➕ Check In</button>
+        </div>
+      </div>
+
+      <div class="attendance-section">
+        <h2>👥 Attendees (<%= attendance.length %>/<%= event.max_capacity || '∞' %>)</h2>
+        
+        <% if (attendance.length === 0) { %>
+          <div class="empty-state">
+            <p>No one checked in yet. Start scanning QR codes!</p>
+          </div>
+        <% } else { %>
+          <div class="attendance-list">
+            <% attendance.forEach(person => { %>
+              <div class="attendee-card">
+                <h4><%= person.name %></h4>
+                <p>📞 <strong><%= person.phone %></strong></p>
+                <% if (person.email) { %>
+                  <p>📧 <%= person.email %></p>
+                <% } %>
+                <% if (person.location) { %>
+                  <p>📍 <%= person.location %></p>
+                <% } %>
+                <p class="checkin-time">
+                  ✓ <%= new Date(person.checked_in_at).toLocaleTimeString('en-IN') %>
+                </p>
+                <p class="checkin-by">By: <%= person.checked_in_by %></p>
+                <button 
+                  class="remove-btn"
+                  onclick="removeCheckIn('<%= person.record_id %>')"
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/admin/events/<%= event.id %>" class="btn btn-primary">📊 Event Details</a>
+        <a href="/admin/events" class="btn btn-secondary">← Back to Events</a>
+      </div>
+    <% } %>
+  </div>
+
+  <script>
+    const eventId = '<%= event?.id || "" %>';
+    let codeReader = null;
+
+    function startScanner() {
+      const video = document.getElementById('video');
+      
+      if (!video) {
+        showMessage('Video element not found', 'error');
+        return;
+      }
+      
+      video.style.display = 'block';
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'inline-block';
+
+      // Check for camera permission
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showMessage('Camera not supported. Please use manual entry.', 'error');
+        return;
+      }
+
+      try {
+        codeReader = new ZXing.BrowserQRCodeReader();
+        codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+          if (result) {
+            const qrText = result.text;
+            // Extract ID from QR URL (e.g., http://localhost:3000/view/uuid -> uuid)
+            const match = qrText.match(/\/view\/([a-f0-9-]+)$/);
+            if (match) {
+              const recordId = match[1];
+              document.getElementById('manualInput').value = recordId;
+              performCheckIn();
+            }
+          }
+        });
+      } catch (err) {
+        showMessage('Camera error: ' + err.message, 'error');
+        video.style.display = 'none';
+        document.getElementById('startBtn').style.display = 'inline-block';
+        document.getElementById('stopBtn').style.display = 'none';
+      }
+    }
+
+    function stopScanner() {
+      const video = document.getElementById('video');
+      video.style.display = 'none';
+      document.getElementById('startBtn').style.display = 'inline-block';
+      document.getElementById('stopBtn').style.display = 'none';
+      
+      if (codeReader) {
+        codeReader.reset();
+      }
+    }
+
+    function handleManualInput(e) {
+      if (e.key === 'Enter') {
+        performCheckIn();
+      }
+    }
+
+    async function performCheckIn() {
+      const recordId = document.getElementById('manualInput').value.trim();
+      if (!recordId) {
+        showMessage('Please enter or scan a user ID', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/api/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordId, eventId })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage(
+            `✓ ${data.record.name} checked in successfully!`, 
+            'success'
+          );
+          document.getElementById('manualInput').value = '';
+          document.getElementById('manualInput').focus();
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          showMessage(data.error || 'Check-in failed', 'error');
+          document.getElementById('manualInput').focus();
+        }
+      } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function removeCheckIn(recordId) {
+      if (!confirm('Remove this user from attendance?')) return;
+
+      try {
+        const response = await fetch('/admin/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordId, eventId })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          showMessage(data.message, 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showMessage(data.error, 'error');
+        }
+      } catch (err) {
+        showMessage('Error: ' + err.message, 'error');
+      }
+    }
+
+    function showMessage(message, type) {
+      const container = document.getElementById('messageContainer');
+      const className = type === 'success' ? 'success-message' : 'error-message';
+      container.innerHTML = `<div class="${className}">${message}</div>`;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          container.innerHTML = '';
+        }, 5000);
+      }
+    }
+
+    // Auto-focus input
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('manualInput').focus();
+    });
+  </script>
+</body>
+</html>
