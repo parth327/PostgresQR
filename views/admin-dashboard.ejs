@@ -15,6 +15,19 @@
       <div class="lbl">Showing (filtered)</div>
     </div>
   </div>
+<div style="margin: 2rem 0; text-align: center;">
+  <a href="/admin/events" class="btn" style="
+    background: #0066cc;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+  ">
+    📋 Manage Events
+  </a>
+</div>
 
   <form class="search-bar" method="GET" action="/admin/dashboard">
     <input type="text" name="search" value="<%= search %>" placeholder="Search by name, location, education, phone or email..." />
@@ -66,19 +79,6 @@
       </table>
     </div>
   <% } %>
-<div style="margin: 2rem 0; text-align: center;">
-  <a href="/admin/events" class="btn" style="
-    background: #0066cc;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    text-decoration: none;
-    display: inline-block;
-    font-weight: bold;
-  ">
-    📋 Manage Events
-  </a>
-</div>
   <p class="small-note">Share this registration link with users: <strong><%= baseUrl %>/register</strong></p>
 </div>
 
