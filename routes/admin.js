@@ -5,6 +5,7 @@ const db = require('../db');
 const requireAdmin = require('../middleware/requireAdmin');
 const { verifyPassword } = require('../utils/auth');
 const { sendExcelFile, safeFilename } = require('../utils/excel');
+const { formatEventDate, formatDateTime } = require('../utils/datetime');
 
 const router = express.Router();
 
@@ -177,7 +178,7 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
       occupation: r.occupation,
       notes: r.notes,
       hasPhoto: r.hasPhoto ? 'Yes' : 'No',
-      createdAt: new Date(r.createdAt).toLocaleString('en-IN'),
+      createdAt: formatDateTime(r.createdAt),
       profileLink: `${config.baseUrl}/view/${r.id}`,
       id: r.id,
     }));
@@ -186,7 +187,7 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
       filename: `users${search ? '-search-' + safeFilename(search) : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`,
       sheetName: 'Users',
       title: 'Registered Users',
-      subtitle: `${records.length} user${records.length === 1 ? '' : 's'}${search ? ` matching "${search}"` : ''} \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      subtitle: `${records.length} user${records.length === 1 ? '' : 's'}${search ? ` matching "${search}"` : ''} \u2022 Generated ${formatDateTime(new Date())}`,
       columns: [
         { header: 'Name', key: 'name', width: 22 },
         { header: 'Phone', key: 'phone', width: 15 },
@@ -218,13 +219,13 @@ router.get('/events/export', requireAdmin, async (req, res, next) => {
 
     const rows = events.map((e) => ({
       name: e.event_name,
-      date: new Date(e.event_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      date: formatEventDate(e.event_date),
       status: (e.status || '').toUpperCase(),
       location: e.location,
       maxCapacity: e.max_capacity,
       checkedInCount: e.checked_in_count,
       description: e.event_description,
-      createdAt: new Date(e.created_at).toLocaleString('en-IN'),
+      createdAt: formatDateTime(e.created_at),
       id: e.id,
     }));
 
@@ -233,7 +234,7 @@ router.get('/events/export', requireAdmin, async (req, res, next) => {
       sheetName: 'Events',
       title: 'Events',
       headerColor: 'FF0066CC',
-      subtitle: `${events.length} event${events.length === 1 ? '' : 's'} \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      subtitle: `${events.length} event${events.length === 1 ? '' : 's'} \u2022 Generated ${formatDateTime(new Date())}`,
       columns: [
         { header: 'Event Name', key: 'name', width: 28 },
         { header: 'Date', key: 'date', width: 20 },
@@ -272,25 +273,21 @@ router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
       education: p.education,
       occupation: p.occupation,
       recordNotes: p.record_notes,
-      checkedInAt: new Date(p.checked_in_at).toLocaleString('en-IN'),
+      checkedInAt: formatDateTime(p.checked_in_at),
       checkedInBy: p.checked_in_by,
       temperature: p.temperature,
       attendanceNotes: p.attendance_notes,
       recordId: p.record_id,
     }));
 
-    const eventDateStr = new Date(event.event_date).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const eventDateStr = formatEventDate(event.event_date);
 
     await sendExcelFile(res, {
       filename: `${safeFilename(event.event_name)}-attendance-${new Date().toISOString().slice(0, 10)}.xlsx`,
       sheetName: 'Attendance',
       title: `${event.event_name} \u2014 Attendance`,
       headerColor: 'FF0066CC',
-      subtitle: `${eventDateStr}${event.location ? ' \u2022 ' + event.location : ''} \u2022 ${attendance.length} checked in \u2022 Generated ${new Date().toLocaleString('en-IN')}`,
+      subtitle: `${eventDateStr}${event.location ? ' \u2022 ' + event.location : ''} \u2022 ${attendance.length} checked in \u2022 Generated ${formatDateTime(new Date())}`,
       columns: [
         { header: 'Name', key: 'name', width: 22 },
         { header: 'Phone', key: 'phone', width: 15 },
