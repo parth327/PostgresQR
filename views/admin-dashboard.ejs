@@ -1,30 +1,22 @@
 <% var pageTitle = 'Admin Dashboard'; var isAdmin = true; %>
 <%- include('partials/header') %>
 
-<div class="wide-container">
+<div class="wide-container fade-in-up">
   <h1>Admin Dashboard</h1>
   <p class="subtitle">Welcome, <%= adminUsername %>. Below is every user record saved through the registration form.</p>
 
   <div class="stat-cards">
-    <div class="stat-card">
+    <div class="stat-card" style="--d:1; animation-delay:0.05s;">
       <div class="num"><%= total %></div>
       <div class="lbl">Total Registered Users</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="--d:2; animation-delay:0.12s;">
       <div class="num"><%= records.length %></div>
       <div class="lbl">Showing (filtered)</div>
     </div>
   </div>
-<div style="margin: 2rem 0; text-align: center;">
-  <a href="/admin/events" class="btn" style="
-    background: #0066cc;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    text-decoration: none;
-    display: inline-block;
-    font-weight: bold;
-  ">
+<div style="margin: 1.5rem 0 2rem; text-align: center;">
+  <a href="/admin/events" class="btn">
     📋 Manage Events
   </a>
 </div>
@@ -48,10 +40,17 @@
           <tr>
             <th>QR</th>
             <th>Name</th>
-            <th>Location</th>
-            <th>Education</th>
+            <th>Age</th>
             <th>Phone</th>
+            <th>WhatsApp</th>
+            <th>Area</th>
             <th>Pincode</th>
+            <th>House No.</th>
+            <th>Society</th>
+            <th>Landmark</th>
+            <th>Education</th>
+            <th>Interest</th>
+            <th>Joined Via</th>
             <th>Registered On</th>
             <th>Actions</th>
           </tr>
@@ -60,12 +59,19 @@
           <% records.forEach(function(r) { %>
             <tr>
               <td><img src="<%= r.qrUrl %>" class="mini-qr" alt="qr" /></td>
-              <td><%= r.name %></td>
-              <td><%= r.location %></td>
-              <td><%= r.education || '-' %></td>
-              <td><%= r.phone %></td>
-              <td><%= r.pincode %></td>
-              <td><%= formatShortDate(r.createdAt) %></td>
+              <td data-label="Name"><%= r.name %></td>
+              <td data-label="Age"><%= r.age || '-' %></td>
+              <td data-label="Phone"><%= r.phone %></td>
+              <td data-label="WhatsApp"><%= r.whatsapp || '-' %></td>
+              <td data-label="Area"><%= r.location %></td>
+              <td data-label="Pincode"><%= r.pincode %></td>
+              <td data-label="House No."><%= r.houseNumber || '-' %></td>
+              <td data-label="Society"><%= r.society || '-' %></td>
+              <td data-label="Landmark"><%= r.landmark || '-' %></td>
+              <td data-label="Education"><%= r.education || '-' %></td>
+              <td data-label="Interest"><%= r.interest || '-' %></td>
+              <td data-label="Joined Via"><%= r.joinMedium === 'અન્ય' ? (r.joinMediumOther || r.joinMedium) : (r.joinMedium || '-') %></td>
+              <td data-label="Registered On"><%= formatShortDate(r.createdAt) %></td>
               <td>
                 <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
                 <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
