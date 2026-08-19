@@ -255,6 +255,16 @@
   </style>
 </head>
 <body>
+  <div class="topbar">
+    <a href="/register" class="brand"><span class="brand-dot"></span>યુવા સંગમ ૨૦૨૬</a>
+    <nav>
+      <a href="/admin/dashboard">Dashboard</a>
+      <a href="/admin/events">Events</a>
+      <form action="/admin/logout" method="POST" style="display:inline">
+        <button type="submit">Logout</button>
+      </form>
+    </nav>
+  </div>
   <div class="checkin-container">
     <% if (!event) { %>
       <div style="background: #f9f9f9; padding: 2rem; border-radius: 8px; text-align: center;">
