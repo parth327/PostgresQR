@@ -76,6 +76,7 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
       adminUsername: req.session.adminUsername,
       baseUrl: config.baseUrl,
       todayEvent,
+      isAdmin: true,
     });
   } catch (err) {
     next(err);
@@ -122,6 +123,7 @@ router.get('/events', requireAdmin, async (req, res, next) => {
     res.render('admin-events', {
       events,
       adminUsername: req.session.adminUsername,
+      isAdmin: true,
     });
   } catch (err) {
     next(err);
@@ -135,6 +137,7 @@ router.get('/events/create', requireAdmin, (req, res) => {
     event: null,
     today,
     adminUsername: req.session.adminUsername,
+    isAdmin: true,
   });
 });
 
@@ -150,6 +153,7 @@ router.post('/events/create', requireAdmin, async (req, res, next) => {
         error: 'Event name and date are required',
         today,
         adminUsername: req.session.adminUsername,
+        isAdmin: true,
       });
     }
 
@@ -367,6 +371,7 @@ router.get('/events/:id', requireAdmin, async (req, res, next) => {
       attendance,
       stats,
       adminUsername: req.session.adminUsername,
+      isAdmin: true,
     });
   } catch (err) {
     next(err);
@@ -392,6 +397,7 @@ router.get('/checkin', requireAdmin, async (req, res, next) => {
         event: null,
         error: 'No event found. Please select an event.',
         adminUsername: req.session.adminUsername,
+        isAdmin: true,
       });
     }
 
@@ -403,6 +409,7 @@ router.get('/checkin', requireAdmin, async (req, res, next) => {
       attendance,
       stats,
       adminUsername: req.session.adminUsername,
+      isAdmin: true,
     });
   } catch (err) {
     next(err);
