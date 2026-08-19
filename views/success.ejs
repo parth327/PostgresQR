@@ -6,7 +6,7 @@
     <div class="alert alert-success">✅ Your details have been saved successfully!</div>
 
     <h1 class="mt-0">Hi <%= record.name %>, here's your QR Code</h1>
-    <p class="subtitle">Anyone who scans this QR code will see your saved profile details.</p>
+    <p class="subtitle">🔒 Your details are private. Only a Yuva Sangam admin can view them by scanning this QR at check-in.</p>
 
     <div class="qr-box">
       <img src="<%= qrUrl %>" alt="QR code for <%= record.name %>" />
@@ -16,7 +16,6 @@
 
     <div class="actions-row" style="justify-content:center;">
       <a href="<%= qrUrl %>" download="qr-<%= record.name.replace(/\s+/g,'-') %>.png" class="btn">⬇ Download QR</a>
-      <a href="/view/<%= record.id %>" class="btn btn-secondary">View My Profile</a>
       <a href="/register" class="btn btn-secondary">Register Another</a>
     </div>
   </div>
