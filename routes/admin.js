@@ -11,19 +11,31 @@ const router = express.Router();
 
 // ==================== EXISTING ADMIN LOGIN ROUTES ====================
 
+// Only allow redirecting back to a safe, same-site path after login
+// (never to an absolute/external URL) to avoid open-redirect issues.
+function safeNext(next) {
+  if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) {
+    return next;
+  }
+  return '/admin/dashboard';
+}
+
 // GET /admin/login
 router.get('/login', (req, res) => {
-  if (req.session && req.session.isAdmin) return res.redirect('/admin/dashboard');
-  res.render('admin-login', { error: null });
+  const next = safeNext(req.query.next);
+  if (req.session && req.session.isAdmin) return res.redirect(next);
+  res.render('admin-login', { error: null, next });
 });
 
 // POST /admin/login
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
+  const next = safeNext(req.body.next || req.query.next);
 
   if (!config.adminPasswordHash) {
     return res.render('admin-login', {
       error: 'Admin password is not configured on the server. Check the .env file.',
+      next,
     });
   }
 
@@ -33,10 +45,10 @@ router.post('/login', (req, res) => {
   if (validUsername && validPassword) {
     req.session.isAdmin = true;
     req.session.adminUsername = username;
-    return res.redirect('/admin/dashboard');
+    return res.redirect(next);
   }
 
-  res.render('admin-login', { error: 'Invalid username or password.' });
+  res.render('admin-login', { error: 'Invalid username or password.', next });
 });
 
 // POST /admin/logout
