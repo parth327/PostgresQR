@@ -43,7 +43,7 @@
     textarea:focus,
     select:focus {
       outline: none;
-      border-color: #0066cc;
+      border-color: #6d28d9;
       box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
     }
     textarea {
@@ -61,11 +61,11 @@
       margin-right: 0.5rem;
     }
     .btn-primary {
-      background: #0066cc;
+      background: #6d28d9;
       color: white;
     }
     .btn-primary:hover {
-      background: #0052a3;
+      background: #5b21b6;
     }
     .btn-secondary {
       background: #6c757d;
@@ -87,6 +87,11 @@
       color: #666;
       margin-top: 0.25rem;
     }
+  
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
+    a.btn, button.btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger { transition: transform .16s ease, box-shadow .16s ease, background .2s ease !important; }
+    a.btn:hover, button.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(109,40,217,0.22); }
+    .event-card, .stat-box, .attendee-card, .checkin-container, .events-container { animation: fadeInUp .5s cubic-bezier(.22,1,.36,1) both; }
   </style>
 </head>
 <body>
