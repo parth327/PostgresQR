@@ -62,15 +62,13 @@ sender: { name: config.email.fromName, email: config.email.from },
 to: [{ email: to.trim(), name: name || undefined }],
 subject: 'Your Registration QR Code - Yuva Sangam 2026',
 textContent:
-`Namaste ${name},\n\n` +
-`Thank you for registering for Yuva Sangam 2026. Your QR code is attached to this email.\n` +
-`Please show it at check-in.\n\n` +
-`You can also view it any time at: ${viewUrl}\n`,
+`નમસ્તે ${name},\n\n` +
+`'યુવા સંગમ ૨૦૨૬' (Yuva Sangam 2026) માટે નોંધણી કરાવવા બદલ આભાર. તમારો QR કોડ આ ઈમેલ સાથે PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.\n` +
+`કૃપા કરીને ચેક-ઈન સમયે તે બતાવશો.\n\n`,
 htmlContent:
-`<p>Namaste ${name},</p>` +
-`<p>Thank you for registering for <strong>Yuva Sangam 2026</strong>. Your QR code is attached ` +
-`to this email as a PNG — please show it at check-in.</p>` +
-`<p>You can also view it any time at: <a href="${viewUrl}">${viewUrl}</a></p>`,
+`<p>નમસ્તે ${name},</p>` +
+`<p>યુવા સંગમ ૨૦૨૬' (Yuva Sangam 2026) માટે નોંધણી કરાવવા બદલ આભાર. તમારો QR કોડ આ ઈમેલ સાથે PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.` +
+`કૃપા કરીને ચેક-ઈન સમયે તે બતાવશો.</p>`,
 attachment: [{ content: qrBuffer.toString('base64'), name: 'qr-code.png' }],
 });
 
