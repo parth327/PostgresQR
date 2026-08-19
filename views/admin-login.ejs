@@ -1,4 +1,5 @@
 <% var pageTitle = 'Admin Login'; %>
+<% var bodyClass = 'page-admin-login'; %>
 <%- include('partials/header') %>
 
 <div class="container login-wrap">
@@ -11,6 +12,7 @@
     <% } %>
 
     <form action="/admin/login" method="POST">
+      <input type="hidden" name="next" value="<%= typeof next !== 'undefined' ? next : '/admin/dashboard' %>" />
       <div class="field" style="margin-bottom:16px;">
         <label>Username</label>
         <input type="text" name="username" required placeholder="admin" autofocus />
@@ -19,7 +21,7 @@
         <label>Password</label>
         <input type="password" name="password" required placeholder="••••••••" />
       </div>
-      <button type="submit" class="btn btn-block">Login</button>
+      <button type="submit" class="btn btn-block btn-glow">🔓 Login</button>
     </form>
 
   </div>
