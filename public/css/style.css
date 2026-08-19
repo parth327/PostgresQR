@@ -765,7 +765,7 @@ table.records-table tr:hover { background: #faf9ff; }
 body.page-register .page-bg-image {
   background-image:
     linear-gradient(160deg, rgba(124,20,20,0.35), rgba(255,153,51,0.30)),
-    url("/img/bharat-mata-bg.jpg"),
+    url("/css/bharat-mata-bg.jpg"),
     linear-gradient(160deg, #ff9933 0%, #f4f0e6 50%, #128807 100%);
 }
 body.page-register .page-bg-overlay {
@@ -777,7 +777,7 @@ body.page-register .page-bg-overlay {
 body.page-admin-login .page-bg-image {
   background-image:
     linear-gradient(160deg, rgba(30,20,10,0.45), rgba(120,60,10,0.30)),
-    url("/img/shivaji-maharaj-bg.jpg"),
+    url("/css/shivaji-maharaj-bg.jpg"),
     linear-gradient(160deg, #3b2412 0%, #7c4a12 50%, #d99a2b 100%);
 }
 body.page-admin-login .page-bg-overlay {
