@@ -12,13 +12,10 @@ module.exports = {
   dbSsl: process.env.DB_SSL !== 'false',
 
   // ---- Email (SMTP) — used to email the QR code after registration ----
-  email: {
-    host: process.env.SMTP_HOST || '',
-    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for port 465
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.EMAIL_FROM || process.env.SMTP_USER || '',
+ email: {
+    brevoApiKey: process.env.BREVO_API_KEY || '',
+    from: process.env.EMAIL_FROM || '',
+    fromName: process.env.EMAIL_FROM_NAME || 'Yuva Sangam 2026',
   },
 };
 
