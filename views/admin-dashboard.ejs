@@ -38,6 +38,7 @@
       <table class="records-table">
         <thead>
           <tr>
+            <th>Actions</th>
             <th>QR</th>
             <th>Name</th>
             <th>Age</th>
@@ -52,12 +53,19 @@
             <th>Interest</th>
             <th>Joined Via</th>
             <th>Registered On</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <% records.forEach(function(r) { %>
             <tr>
+              <td>
+                <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
+                <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
+                <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
+                      onsubmit="return confirm('Delete this record permanently?');">
+                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+              </td>
               <td><img src="<%= r.qrUrl %>" class="mini-qr" alt="qr" /></td>
               <td data-label="Name"><%= r.name %></td>
               <td data-label="Age"><%= r.age || '-' %></td>
@@ -72,14 +80,6 @@
               <td data-label="Interest"><%= r.interest || '-' %></td>
               <td data-label="Joined Via"><%= r.joinMedium === 'અન્ય' ? (r.joinMediumOther || r.joinMedium) : (r.joinMedium || '-') %></td>
               <td data-label="Registered On"><%= formatShortDate(r.createdAt) %></td>
-              <td>
-                <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
-                <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
-                <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
-                      onsubmit="return confirm('Delete this record permanently?');">
-                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-              </td>
             </tr>
           <% }); %>
         </tbody>
