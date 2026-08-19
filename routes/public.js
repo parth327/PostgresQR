@@ -41,11 +41,27 @@ router.post('/register', (req, res) => {
     }
 
     try {
-      const { name, dob, gender, phone, email, location, address, education, occupation, notes,pincode } = req.body;
+      const {
+        name, dob, gender, phone, whatsapp, email, location, address,
+        houseNumber, society, landmark, education, occupation, notes, pincode,
+        interest, joinMedium, joinMediumOther, age,
+      } = req.body;
 
-      if (!name || !name.trim() || !phone || !phone.trim() || !location || !location.trim()) {
+      const missing = [];
+      if (!name || !name.trim()) missing.push('પૂરું નામ');
+      if (!phone || !phone.trim()) missing.push('ફોન નંબર');
+      if (!location || !location.trim()) missing.push('એરિયા');
+      if (!education || !education.trim()) missing.push('અભ્યાસ');
+      if (!interest || !interest.trim()) missing.push('રુચિનો વિષય');
+      if (!joinMedium || !joinMedium.trim()) missing.push('કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો?');
+      if (joinMedium === 'અન્ય' && (!joinMediumOther || !joinMediumOther.trim())) missing.push('અન્ય');
+
+      const ageNum = age ? parseInt(age, 10) : null;
+      if (!age || Number.isNaN(ageNum) || ageNum < 15 || ageNum > 100) missing.push('ઉંમર (15-100)');
+
+      if (missing.length) {
         return res.render('register', {
-          error: 'Please fill in all required fields (Name, Phone, Location).',
+          error: `કૃપા કરીને આ ફિલ્ડ ભરો: ${missing.join(', ')}`,
           formData: req.body,
         });
       }
@@ -62,11 +78,19 @@ router.post('/register', (req, res) => {
         dob: dob || '',
         gender: gender || '',
         phone: phone.trim(),
+        whatsapp: (whatsapp || '').trim(),
         email: (email || '').trim(),
         location: location.trim(),
+        houseNumber: (houseNumber || '').trim(),
+        society: (society || '').trim(),
+        landmark: (landmark || '').trim(),
         address: (address || '').trim(),
         education: (education || '').trim(),
         occupation: (occupation || '').trim(),
+        interest: (interest || '').trim(),
+        joinMedium: (joinMedium || '').trim(),
+        joinMediumOther: joinMedium === 'અન્ય' ? (joinMediumOther || '').trim() : '',
+        age: ageNum,
         notes: (notes || '').trim(),
         photoData: req.file ? req.file.buffer.toString('base64') : null,
         photoMime: req.file ? req.file.mimetype : null,
