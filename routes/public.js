@@ -116,20 +116,39 @@ router.get('/success/:id', async (req, res) => {
   res.render('success', { record, viewUrl, qrUrl: `/qr/${record.id}` });
 });
 
-// GET /view/:id -> public page shown when the QR code is scanned
+// GET /view/:id -> page shown when the QR code is scanned.
+// Only a logged-in admin may see the saved details. Anyone else (i.e. any
+// member of the public scanning the QR) is shown a locked/restricted page
+// and offered an admin-login link that brings them straight back here.
 router.get('/view/:id', async (req, res) => {
   const record = await db.getRecordById(req.params.id);
   if (!record) return res.status(404).render('404', { message: 'This QR code does not match any record.' });
+
+  const isAdmin = !!(req.session && req.session.isAdmin);
+
+  if (!isAdmin) {
+    return res.status(403).render('view-restricted', {
+      loginUrl: `/admin/login?next=${encodeURIComponent(`/view/${record.id}`)}`,
+    });
+  }
+
+  const attendanceHistory = await db.getAttendanceByUser(record.id);
+
   res.render('view-record', {
     record,
     photoUrl: record.hasPhoto ? `/photo/${record.id}` : null,
     qrUrl: `/qr/${record.id}`,
-    isAdmin: !!(req.session && req.session.isAdmin),
+    isAdmin: true,
+    attendanceHistory,
   });
 });
 
-// GET /photo/:id -> serves the uploaded photo straight from the database
+// GET /photo/:id -> serves the uploaded photo straight from the database.
+// Restricted to admins only, same as the profile details themselves.
 router.get('/photo/:id', async (req, res) => {
+  if (!(req.session && req.session.isAdmin)) {
+    return res.status(403).send('Forbidden');
+  }
   const photo = await db.getPhoto(req.params.id);
   if (!photo) return res.status(404).send('Not found');
   res.set('Content-Type', photo.mime);
