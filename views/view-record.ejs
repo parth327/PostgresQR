@@ -2,7 +2,7 @@
 <%- include('partials/header') %>
 
 <div class="container">
-  <div class="card">
+  <div class="card fade-in-up">
     <div class="profile-header">
       <% if (photoUrl) { %>
         <img src="<%= photoUrl %>" alt="<%= record.name %>" class="record-photo" />
@@ -15,14 +15,29 @@
       </div>
     </div>
 
-    <div class="detail-row"><span class="label">Location</span><span class="value"><%= record.location || '-' %></span></div>
-    <div class="detail-row"><span class="label">Education</span><span class="value"><%= record.education || '-' %></span></div>
-    <div class="detail-row"><span class="label">Phone</span><span class="value"><%= record.phone || '-' %></span></div>
-    <div class="detail-row"><span class="label">Email</span><span class="value"><%= record.email || '-' %></span></div>
-    <div class="detail-row"><span class="label">Date of Birth</span><span class="value"><%= record.dob || '-' %></span></div>
-    <div class="detail-row"><span class="label">Gender</span><span class="value"><%= record.gender || '-' %></span></div>
-    <div class="detail-row"><span class="label">Address</span><span class="value"><%= record.address || '-' %></span></div>
-    <div class="detail-row"><span class="label">PinCode</span><span class="value"><%= record.pincode || '-' %></span></div>
+    <div class="detail-row"><span class="label">ઉંમર</span><span class="value"><%= record.age || '-' %></span></div>
+    <div class="detail-row"><span class="label">ફોન નંબર</span><span class="value"><%= record.phone || '-' %></span></div>
+    <div class="detail-row"><span class="label">વોટ્સએપ નંબર</span><span class="value"><%= record.whatsapp || '-' %></span></div>
+    <div class="detail-row"><span class="label">એરિયા</span><span class="value"><%= record.location || '-' %></span></div>
+    <div class="detail-row"><span class="label">પિનકોડ</span><span class="value"><%= record.pincode || '-' %></span></div>
+    <div class="detail-row"><span class="label">ઘર નંબર</span><span class="value"><%= record.houseNumber || '-' %></span></div>
+    <div class="detail-row"><span class="label">સોસાયટી</span><span class="value"><%= record.society || '-' %></span></div>
+    <div class="detail-row"><span class="label">લેન્ડમાર્ક</span><span class="value"><%= record.landmark || '-' %></span></div>
+    <div class="detail-row"><span class="label">અભ્યાસ</span><span class="value"><%= record.education || '-' %></span></div>
+    <div class="detail-row"><span class="label">રુચિનો વિષય</span><span class="value"><%= record.interest || '-' %></span></div>
+    <div class="detail-row"><span class="label">કયા માધ્યમથી જોડાયા</span><span class="value"><%= record.joinMedium === 'અન્ય' ? (record.joinMediumOther || record.joinMedium) : (record.joinMedium || '-') %></span></div>
+    <% if (record.email) { %>
+    <div class="detail-row"><span class="label">Email</span><span class="value"><%= record.email %></span></div>
+    <% } %>
+    <% if (record.dob) { %>
+    <div class="detail-row"><span class="label">Date of Birth</span><span class="value"><%= record.dob %></span></div>
+    <% } %>
+    <% if (record.gender) { %>
+    <div class="detail-row"><span class="label">Gender</span><span class="value"><%= record.gender %></span></div>
+    <% } %>
+    <% if (record.address) { %>
+    <div class="detail-row"><span class="label">Address</span><span class="value"><%= record.address %></span></div>
+    <% } %>
 <% if (record.notes) { %>
       <div class="detail-row"><span class="label">Notes</span><span class="value"><%= record.notes %></span></div>
     <% } %>
