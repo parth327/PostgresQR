@@ -36,6 +36,16 @@ async function init() {
       );
     `);
 
+    // New registration fields (added for Yuva Sangam form) — safe to run every startup.
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS whatsapp TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS house_number TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS society TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS landmark TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS interest TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS join_medium TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS join_medium_other TEXT;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS age INTEGER;`);
+
     // Events table (new)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS events (
@@ -98,11 +108,19 @@ function rowToRecord(row) {
     dob: row.dob || '',
     gender: row.gender || '',
     phone: row.phone,
+    whatsapp: row.whatsapp || '',
     email: row.email || '',
     location: row.location,
+    houseNumber: row.house_number || '',
+    society: row.society || '',
+    landmark: row.landmark || '',
     address: row.address || '',
     education: row.education || '',
     occupation: row.occupation || '',
+    interest: row.interest || '',
+    joinMedium: row.join_medium || '',
+    joinMediumOther: row.join_medium_other || '',
+    age: row.age || '',
     notes: row.notes || '',
     photoMime: row.photo_mime || null,
     hasPhoto: !!row.photo_data,
@@ -136,19 +154,27 @@ async function getQr(id) {
 async function addRecord(record) {
   await pool.query(
     `INSERT INTO records
-      (id, name, dob, gender, phone, email, location, address, education, occupation, notes, photo_data, photo_mime, qr_data, created_at, pincode)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      (id, name, dob, gender, phone, whatsapp, email, location, house_number, society, landmark, address, education, occupation, interest, join_medium, join_medium_other, age, notes, photo_data, photo_mime, qr_data, created_at, pincode)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
     [
       record.id,
       record.name,
       record.dob || null,
       record.gender || null,
       record.phone,
+      record.whatsapp || null,
       record.email || null,
       record.location,
+      record.houseNumber || null,
+      record.society || null,
+      record.landmark || null,
       record.address || null,
       record.education || null,
       record.occupation || null,
+      record.interest || null,
+      record.joinMedium || null,
+      record.joinMediumOther || null,
+      record.age || null,
       record.notes || null,
       record.photoData || null,
       record.photoMime || null,
@@ -175,6 +201,7 @@ async function searchRecords(term) {
   const { rows } = await pool.query(
     `SELECT * FROM records
      WHERE name ILIKE $1 OR location ILIKE $1 OR education ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1
+        OR whatsapp ILIKE $1 OR society ILIKE $1 OR landmark ILIKE $1 OR interest ILIKE $1 OR join_medium ILIKE $1
      ORDER BY created_at DESC`,
     [like]
   );
@@ -282,11 +309,19 @@ async function getEventAttendance(eventId) {
        r.dob,
        r.gender,
        r.phone,
+       r.whatsapp,
        r.email,
        r.location,
+       r.house_number,
+       r.society,
+       r.landmark,
        r.address,
        r.education,
        r.occupation,
+       r.interest,
+       r.join_medium,
+       r.join_medium_other,
+       r.age,
        r.pincode,
        r.notes AS record_notes
      FROM event_attendance ea
