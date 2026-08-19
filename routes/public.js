@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 
 const config = require('../config');
 const db = require('../db');
+const notify = require('../utils/notify');
 
 const router = express.Router();
 
@@ -50,6 +51,9 @@ router.post('/register', (req, res) => {
       const missing = [];
       if (!name || !name.trim()) missing.push('પૂરું નામ');
       if (!phone || !phone.trim()) missing.push('ફોન નંબર');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !email.trim()) missing.push('ઈમેલ');
+      else if (!emailRegex.test(email.trim())) missing.push('યોગ્ય ઈમેલ સરનામું');
       if (!location || !location.trim()) missing.push('એરિયા');
       if (!education || !education.trim()) missing.push('અભ્યાસ');
       if (!interest || !interest.trim()) missing.push('રુચિનો વિષય');
@@ -100,6 +104,21 @@ router.post('/register', (req, res) => {
       };
 
       await db.addRecord(record);
+
+      // Fire off Email / WhatsApp / SMS delivery of the QR code in the
+      // background. These call external providers (SMTP, Twilio) which can
+      // be slow — we don't want the user's redirect to hang waiting on them,
+      // and a delivery failure should never fail the registration itself.
+      const qrImageUrl = `${config.baseUrl}/qr/${id}`;
+      notify
+        .notifyNewRegistration({ record, qrBuffer, viewUrl, qrImageUrl })
+        .then((results) => {
+          console.log(`[notify] Registration ${id} delivery results:`, results);
+        })
+        .catch((notifyErr) => {
+          console.error(`[notify] Unexpected error sending notifications for ${id}:`, notifyErr);
+        });
+
       res.redirect(`/success/${id}`);
     } catch (dbErr) {
       console.error('Failed to save record:', dbErr);
