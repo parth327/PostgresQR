@@ -1,142 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Events - Admin Dashboard</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .events-container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    .events-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    .event-card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      background: #f9f9f9;
-    }
-    .event-date {
-      color: #6d28d9;
-      font-weight: bold;
-      font-size: 1.1rem;
-    }
-    .event-status {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      margin-left: 1rem;
-    }
-    .status-upcoming {
-      background: #fff3cd;
-      color: #856404;
-    }
-    .status-ongoing {
-      background: #d4edda;
-      color: #155724;
-    }
-    .status-completed {
-      background: #e2e3e5;
-      color: #383d41;
-    }
-    .event-actions {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-    }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 0.9rem;
-    }
-    .btn-primary {
-      background: #6d28d9;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #5b21b6;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-    .btn-success:hover {
-      background: #218838;
-    }
-  
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
-    a.btn, button.btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger { transition: transform .16s ease, box-shadow .16s ease, background .2s ease !important; }
-    a.btn:hover, button.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(109,40,217,0.22); }
-    .event-card, .stat-box, .attendee-card, .checkin-container, .events-container { animation: fadeInUp .5s cubic-bezier(.22,1,.36,1) both; }
-  </style>
-</head>
-<body>
-  <div class="events-container">
-    <div class="events-header">
-      <div>
-        <h1>Events</h1>
-        <p style="color: #666; margin-top: 0.5rem;">Logged in as: <strong><%= adminUsername %></strong></p>
-      </div>
-      <div style="display: flex; gap: 0.5rem;">
-        <a href="/admin/events/export" class="btn btn-secondary">⬇ Export to Excel</a>
-        <a href="/admin/events/create" class="btn btn-primary">+ New Event</a>
-      </div>
-    </div>
+<% var pageTitle = 'Admin Login'; %>
+<%- include('partials/header') %>
 
-    <% if (events.length === 0) { %>
-      <div style="background: #e7f3ff; padding: 1.5rem; border-radius: 4px; text-align: center;">
-        <p>No events created yet. <a href="/admin/events/create" style="color: #6d28d9; font-weight: bold;">Create one now</a></p>
-      </div>
-    <% } else { %>
-      <% events.forEach(event => { %>
-        <div class="event-card">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div style="flex: 1;">
-              <h3 style="margin: 0 0 0.5rem 0;"><%= event.event_name %></h3>
-              <p class="event-date">
-                📅 <%= formatEventDate(event.event_date) %>
-              </p>
-              <p style="margin: 0.5rem 0;">📍 <strong>Location:</strong> <%= event.location || 'N/A' %></p>
-              <% if (event.max_capacity) { %>
-                <p style="margin: 0.5rem 0;">👥 <strong>Capacity:</strong> <%= event.max_capacity %> users</p>
-              <% } %>
-              <p style="margin: 0.5rem 0; color: #666;"><%= event.event_description %></p>
-            </div>
-            <span class="event-status status-<%= event.status %>">
-              <%= event.status.toUpperCase() %>
-            </span>
-          </div>
-          <div class="event-actions">
-            <a href="/admin/events/<%= event.id %>" class="btn btn-primary">View Details</a>
-            <a href="/admin/checkin?eventId=<%= event.id %>" class="btn btn-success">Check In Users</a>
-          </div>
-        </div>
-      <% }); %>
+<div class="container login-wrap">
+  <div class="card login-card">
+    <div class="login-icon">🔐</div>
+    <h1 class="text-center">Admin Login</h1>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
     <% } %>
 
-    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd;">
-      <a href="/admin/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
-    </div>
+    <form action="/admin/login" method="POST">
+      <div class="field" style="margin-bottom:16px;">
+        <label>Username</label>
+        <input type="text" name="username" required placeholder="admin" autofocus />
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="••••••••" />
+      </div>
+      <button type="submit" class="btn btn-block">Login</button>
+    </form>
+
   </div>
-</body>
-</html>
+</div>
+
+<%- include('partials/footer') %>
