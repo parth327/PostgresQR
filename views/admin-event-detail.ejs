@@ -12,7 +12,7 @@
       padding: 0 1rem;
     }
     .event-header {
-      background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+      background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
       color: white;
       padding: 2rem;
       border-radius: 8px;
@@ -27,7 +27,7 @@
       padding: 1.5rem;
       border-radius: 8px;
       margin-bottom: 2rem;
-      border-left: 4px solid #0066cc;
+      border-left: 4px solid #6d28d9;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .event-info p {
@@ -51,7 +51,7 @@
     .stat-number {
       font-size: 2.5rem;
       font-weight: bold;
-      color: #0066cc;
+      color: #6d28d9;
       margin-bottom: 0.5rem;
     }
     .stat-label {
@@ -73,7 +73,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .attendance-table th {
-      background: #0066cc;
+      background: #6d28d9;
       color: white;
       padding: 1rem;
       text-align: left;
@@ -115,11 +115,11 @@
       transition: background 0.2s;
     }
     .btn-primary {
-      background: #0066cc;
+      background: #6d28d9;
       color: white;
     }
     .btn-primary:hover {
-      background: #0052a3;
+      background: #5b21b6;
     }
     .btn-success {
       background: #28a745;
@@ -135,6 +135,11 @@
     .btn-secondary:hover {
       background: #5a6268;
     }
+  
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
+    a.btn, button.btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger { transition: transform .16s ease, box-shadow .16s ease, background .2s ease !important; }
+    a.btn:hover, button.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(109,40,217,0.22); }
+    .event-card, .stat-box, .attendee-card, .checkin-container, .events-container { animation: fadeInUp .5s cubic-bezier(.22,1,.36,1) both; }
   </style>
 </head>
 <body>
@@ -154,7 +159,7 @@
       <% } %>
       <p>
         <strong>Status:</strong> 
-        <span style="color: #0066cc; font-weight: bold; text-transform: uppercase;">
+        <span style="color: #6d28d9; font-weight: bold; text-transform: uppercase;">
           <%= event.status %>
         </span>
       </p>
