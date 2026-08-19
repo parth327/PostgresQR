@@ -9,7 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
 </head>
-<body>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+<% if (typeof bodyClass !== 'undefined' && (bodyClass === 'page-register' || bodyClass === 'page-admin-login')) { %>
+  <div class="page-bg-image" aria-hidden="true"></div>
+  <div class="page-bg-overlay" aria-hidden="true"></div>
+<% } %>
 <div class="bg-orb bg-orb-1"></div>
 <div class="bg-orb bg-orb-2"></div>
 <div class="bg-orb bg-orb-3"></div>
