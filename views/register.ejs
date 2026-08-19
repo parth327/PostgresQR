@@ -1,154 +1,172 @@
 <% var pageTitle = 'Register - YUVA SANGAM 2026'; %>
+<% var bodyClass = 'page-register'; %>
 <%- include('partials/header') %>
 
 <div class="container">
   <div class="card fade-in-up">
     <div class="form-hero">
-      <h2 class="hero-badge">🕉️રાષ્ટ્રીય સ્વયંસેવક સંઘ🕉️</h2>
+      <h2 class="hero-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ 🕉️</h2>
       <h1>યુવા સંગમ ૨૦૨૬</h1>
-      <p class="subtitle">નમસ્તે મિત્રો , યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
+      <p class="subtitle">નમસ્તે મિત્રો, યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
     </div>
 
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p class="progress-label" id="progressLabel">0% પૂર્ણ</p>
+
     <% if (error) { %>
-      <div class="alert alert-error shake"><%= error %></div>
+      <div class="alert alert-error shake">⚠️ <%= error %></div>
     <% } %>
 
     <form action="/register" method="POST" enctype="multipart/form-data" id="regForm" novalidate>
-      <div class="form-grid">
 
-        <div class="field full stagger" style="--d:1">
-          <label>પૂરું નામ <span class="req">*</span></label>
-          <input type="text" name="name" required value="<%= formData.name || '' %>" placeholder="દા.ત. રમેશ પટેલ" />
-        </div>
+      <div class="form-section stagger" style="--d:1">
+        <h3 class="section-title"><span class="section-num">1</span> વ્યક્તિગત માહિતી</h3>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="f-name">👤 પૂરું નામ <span class="req">*</span></label>
+            <input type="text" id="f-name" name="name" required value="<%= formData.name || '' %>" placeholder="દા.ત. રમેશ પટેલ" />
+          </div>
 
-        <div class="field stagger" style="--d:2">
-          <label>ફોન નંબર <span class="req">*</span></label>
-          <input type="tel" name="phone" required pattern="[0-9]{10}" maxlength="10" value="<%= formData.phone || '' %>" placeholder="દા.ત. 9876543210" />
-        </div>
+          <div class="field">
+            <label for="f-age">🎂 ઉંમર <span class="req">*</span></label>
+            <input type="number" id="f-age" name="age" required min="15" max="100" value="<%= formData.age || '' %>" placeholder="15 - 100" />
+          </div>
 
-        <div class="field stagger" style="--d:3">
-          <label>વોટ્સએપ નંબર</label>
-          <input type="tel" name="whatsapp" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" />
-        </div>
-
-        <div class="field stagger" style="--d:4">
-          <label>ઉંમર <span class="req">*</span></label>
-          <input type="number" name="age" required min="15" max="100" value="<%= formData.age || '' %>" placeholder="15 - 100" />
-        </div>
-
-        <div class="field stagger" style="--d:5">
-          <label>એરિયા <span class="req">*</span></label>
-          <select name="location" required>
-            <option value="" disabled <%= !formData.location ? 'selected' : '' %>>પસંદ કરો</option>
-            <% ['કૃષ્ણા નગર','કુબેરનગર','સૈજપુર','સરદારનગર','નરોડા','હરિદર્શન'].forEach(function(opt) { %>
-              <option value="<%= opt %>" <%= formData.location === opt ? 'selected' : '' %>><%= opt %></option>
-            <% }); %>
-          </select>
-        </div>
-
-        <div class="field stagger" style="--d:6">
-          <label>પિનકોડ <span class="req">*</span></label>
-          <input type="text" name="pincode" required value="<%= formData.pincode || '' %>" placeholder="દા.ત. 382330" />
-        </div>
-
-        <div class="field stagger" style="--d:7">
-          <label>ઘર નંબર</label>
-          <input type="text" name="houseNumber" value="<%= formData.houseNumber || '' %>" placeholder="દા.ત. 12/A" />
-        </div>
-
-        <div class="field stagger" style="--d:8">
-          <label>સોસાયટી</label>
-          <input type="text" name="society" value="<%= formData.society || '' %>" placeholder="સોસાયટીનું નામ" />
-        </div>
-
-        <div class="field full stagger" style="--d:9">
-          <label>લેન્ડમાર્ક</label>
-          <input type="text" name="landmark" value="<%= formData.landmark || '' %>" placeholder="નજીકનું જાણીતું સ્થળ" />
-        </div>
-
-        <div class="field stagger" style="--d:10">
-          <label>અભ્યાસ <span class="req">*</span></label>
-          <input type="text" name="education" required value="<%= formData.education || '' %>" placeholder="દા.ત. B.Tech Computer Science" />
-        </div>
-
-        <div class="field stagger" style="--d:11">
-          <label>રુચિનો વિષય <span class="req">*</span></label>
-          <select name="interest" required>
-            <option value="" disabled <%= !formData.interest ? 'selected' : '' %>>પસંદ કરો</option>
-            <% ['સેવા','પર્યાવરણ','વાંચન','લેખન','વક્તા','રમત'].forEach(function(opt) { %>
-              <option value="<%= opt %>" <%= formData.interest === opt ? 'selected' : '' %>><%= opt %></option>
-            <% }); %>
-          </select>
-        </div>
-
-        <div class="field full stagger" style="--d:12">
-          <label>કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો? <span class="req">*</span></label>
-          <select name="joinMedium" id="joinMedium" required>
-            <option value="" disabled <%= !formData.joinMedium ? 'selected' : '' %>>પસંદ કરો</option>
-            <% ['શાખા','સાપ્તાહિક મિલન','અન્ય'].forEach(function(opt) { %>
-              <option value="<%= opt %>" <%= formData.joinMedium === opt ? 'selected' : '' %>><%= opt %></option>
-            <% }); %>
-          </select>
-        </div>
-
-        <div class="field full stagger" id="joinMediumOtherWrap" style="--d:13; display:none;">
-          <label>અન્ય <span class="req">*</span></label>
-          <input type="text" name="joinMediumOther" id="joinMediumOther" value="<%= formData.joinMediumOther || '' %>" placeholder="કૃપા કરીને જણાવો" />
-        </div>
-
-        <div class="field" style="display:none;">
-          <label>Date of Birth</label>
-          <input type="date" name="dob" value="<%= formData.dob || '' %>" />
-        </div>
-
-        <div class="field" style="display:none;">
-          <label>Email</label>
-          <input type="email" name="email" value="<%= formData.email || '' %>" placeholder="e.g. john@email.com" />
-        </div>
-
-        <div class="field" style="display:none;">
-          <label>Gender</label>
-          <select name="gender">
-            <option value="">Select</option>
-            <option value="Male" <%= formData.gender === 'Male' ? 'selected' : '' %>>Male</option>
-            <option value="Female" <%= formData.gender === 'Female' ? 'selected' : '' %>>Female</option>
-            <option value="Other" <%= formData.gender === 'Other' ? 'selected' : '' %>>Other</option>
-          </select>
-        </div>
-
-        <div class="field full" style="display:none;">
-          <label>Address</label>
-          <input type="text" name="address" value="<%= formData.address || '' %>" placeholder="Full address" />
-        </div>
-
-        <div class="field" style="display:none;">
-          <label>Occupation</label>
-          <input type="text" name="occupation" value="<%= formData.occupation || '' %>" placeholder="e.g. Software Engineer" />
-        </div>
-
-        <div class="field" style="display:none;">
-          <label>Photo (optional)</label>
-          <input type="file" name="photo" accept="image/*" />
-        </div>
-
-        <div class="field full" style="display:none;">
-          <label>Additional Notes</label>
-          <textarea name="notes" placeholder="Anything else you'd like to add..."><%= formData.notes || '' %></textarea>
+          <div class="field">
+            <label for="f-education">🎓 અભ્યાસ <span class="req">*</span></label>
+            <input type="text" id="f-education" name="education" required value="<%= formData.education || '' %>" placeholder="દા.ત. B.Tech Computer Science" />
+          </div>
         </div>
       </div>
 
+      <div class="form-section stagger" style="--d:2">
+        <h3 class="section-title"><span class="section-num">2</span> સંપર્ક વિગતો</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label for="f-phone">📱 ફોન નંબર <span class="req">*</span></label>
+            <input type="tel" id="f-phone" name="phone" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.phone || '' %>" placeholder="દા.ત. 9876543210" />
+          </div>
+
+          <div class="field">
+            <label for="f-whatsapp">💬 વોટ્સએપ નંબર</label>
+            <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section stagger" style="--d:3">
+        <h3 class="section-title"><span class="section-num">3</span> સરનામું</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label for="f-location">📍 એરિયા <span class="req">*</span></label>
+            <select id="f-location" name="location" required>
+              <option value="" disabled <%= !formData.location ? 'selected' : '' %>>પસંદ કરો</option>
+              <% ['કૃષ્ણા નગર','કુબેરનગર','સૈજપુર','સરદારનગર','નરોડા','હરિદર્શન'].forEach(function(opt) { %>
+                <option value="<%= opt %>" <%= formData.location === opt ? 'selected' : '' %>><%= opt %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-pincode">🏷️ પિનકોડ <span class="req">*</span></label>
+            <input type="text" id="f-pincode" name="pincode" required inputmode="numeric" maxlength="6" value="<%= formData.pincode || '' %>" placeholder="દા.ત. 382330" />
+          </div>
+
+          <div class="field">
+            <label for="f-houseNumber">🏠 ઘર નંબર</label>
+            <input type="text" id="f-houseNumber" name="houseNumber" value="<%= formData.houseNumber || '' %>" placeholder="દા.ત. 12/A" />
+          </div>
+
+          <div class="field">
+            <label for="f-society">🏘️ સોસાયટી</label>
+            <input type="text" id="f-society" name="society" value="<%= formData.society || '' %>" placeholder="સોસાયટીનું નામ" />
+          </div>
+
+          <div class="field full">
+            <label for="f-landmark">🧭 લેન્ડમાર્ક</label>
+            <input type="text" id="f-landmark" name="landmark" value="<%= formData.landmark || '' %>" placeholder="નજીકનું જાણીતું સ્થળ" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section stagger" style="--d:4">
+        <h3 class="section-title"><span class="section-num">4</span> રુચિ અને જોડાણ</h3>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="f-interest">✨ રુચિનો વિષય <span class="req">*</span></label>
+            <select id="f-interest" name="interest" required>
+              <option value="" disabled <%= !formData.interest ? 'selected' : '' %>>પસંદ કરો</option>
+              <% ['સેવા','પર્યાવરણ','વાંચન','લેખન','વક્તા','રમત'].forEach(function(opt) { %>
+                <option value="<%= opt %>" <%= formData.interest === opt ? 'selected' : '' %>><%= opt %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="joinMedium">🤝 કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો? <span class="req">*</span></label>
+            <select name="joinMedium" id="joinMedium" required>
+              <option value="" disabled <%= !formData.joinMedium ? 'selected' : '' %>>પસંદ કરો</option>
+              <% ['શાખા','સાપ્તાહિક મિલન','અન્ય'].forEach(function(opt) { %>
+                <option value="<%= opt %>" <%= formData.joinMedium === opt ? 'selected' : '' %>><%= opt %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="field full" id="joinMediumOtherWrap" style="display:none;">
+            <label for="joinMediumOther">✍️ અન્ય <span class="req">*</span></label>
+            <input type="text" name="joinMediumOther" id="joinMediumOther" value="<%= formData.joinMediumOther || '' %>" placeholder="કૃપા કરીને જણાવો" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Kept for future use / admin export compatibility, not shown on the public form -->
+      <div class="field" style="display:none;">
+        <input type="date" name="dob" value="<%= formData.dob || '' %>" />
+      </div>
+      <div class="field" style="display:none;">
+        <input type="email" name="email" value="<%= formData.email || '' %>" />
+      </div>
+      <div class="field" style="display:none;">
+        <select name="gender">
+          <option value="">Select</option>
+          <option value="Male" <%= formData.gender === 'Male' ? 'selected' : '' %>>Male</option>
+          <option value="Female" <%= formData.gender === 'Female' ? 'selected' : '' %>>Female</option>
+          <option value="Other" <%= formData.gender === 'Other' ? 'selected' : '' %>>Other</option>
+        </select>
+      </div>
+      <div class="field" style="display:none;">
+        <input type="text" name="address" value="<%= formData.address || '' %>" />
+      </div>
+      <div class="field" style="display:none;">
+        <input type="text" name="occupation" value="<%= formData.occupation || '' %>" />
+      </div>
+      <div class="field" style="display:none;">
+        <input type="file" name="photo" accept="image/*" />
+      </div>
+      <div class="field" style="display:none;">
+        <textarea name="notes"><%= formData.notes || '' %></textarea>
+      </div>
+
       <div class="actions-row">
-        <button type="submit" class="btn btn-block btn-glow" id="submitBtn">
+        <button type="submit" class="btn btn-block btn-glow" id="submitBtn" disabled>
           <span class="btn-text">ક્લિક કરો અને તમારો ક્યુઆર કોડ જનરેટ કરો</span>
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
       </div>
+      <p class="form-privacy-note">🔒 તમારી માહિતી ફક્ત એડમિન જ QR કોડ સ્કેન કરીને જોઈ શકશે.</p>
     </form>
   </div>
 </div>
 
 <script>
   (function () {
+    var form = document.getElementById('regForm');
+    var btn = document.getElementById('submitBtn');
+    var progressFill = document.getElementById('progressFill');
+    var progressLabel = document.getElementById('progressLabel');
+
     var joinMedium = document.getElementById('joinMedium');
     var otherWrap = document.getElementById('joinMediumOtherWrap');
     var otherInput = document.getElementById('joinMediumOther');
@@ -164,18 +182,76 @@
         otherInput.value = '';
         otherWrap.classList.remove('field-reveal');
       }
+      updateProgress();
     }
+
+    // Required, currently-visible fields we track for the progress bar / validity
+    function requiredFields() {
+      var fields = Array.prototype.slice.call(form.querySelectorAll('[required]'));
+      return fields.filter(function (el) {
+        return el.offsetParent !== null; // ignore required fields hidden in a collapsed section
+      });
+    }
+
+    function fieldIsValid(el) {
+      if (el.tagName === 'SELECT') return !!el.value;
+      if (el.type === 'number') {
+        var v = parseInt(el.value, 10);
+        var min = el.min ? parseInt(el.min, 10) : -Infinity;
+        var max = el.max ? parseInt(el.max, 10) : Infinity;
+        return el.value !== '' && !isNaN(v) && v >= min && v <= max;
+      }
+      if (el.pattern) {
+        return new RegExp('^(?:' + el.pattern + ')$').test(el.value);
+      }
+      return el.value.trim().length > 0;
+    }
+
+    function updateProgress() {
+      var fields = requiredFields();
+      var filled = fields.filter(fieldIsValid).length;
+      var pct = fields.length ? Math.round((filled / fields.length) * 100) : 0;
+      progressFill.style.width = pct + '%';
+      progressLabel.textContent = pct + '% પૂર્ણ';
+      btn.disabled = pct < 100;
+    }
+
+    function attachHint(el) {
+      el.addEventListener('input', function () {
+        el.classList.remove('field-error', 'field-ok');
+        updateProgress();
+      });
+      el.addEventListener('blur', function () {
+        if (!el.hasAttribute('required') && el.value.trim() === '') return;
+        if (fieldIsValid(el)) {
+          el.classList.add('field-ok');
+          el.classList.remove('field-error');
+        } else {
+          el.classList.add('field-error');
+          el.classList.remove('field-ok');
+        }
+      });
+    }
+
+    Array.prototype.slice.call(form.querySelectorAll('input, select, textarea')).forEach(attachHint);
 
     joinMedium.addEventListener('change', syncOther);
     syncOther();
+    updateProgress();
 
-    var form = document.getElementById('regForm');
-    var btn = document.getElementById('submitBtn');
-    form.addEventListener('submit', function () {
-      if (form.checkValidity()) {
-        btn.classList.add('loading');
-        btn.disabled = true;
+    form.addEventListener('submit', function (e) {
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        var firstInvalid = form.querySelector(':invalid');
+        if (firstInvalid) {
+          firstInvalid.classList.add('field-error');
+          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstInvalid.focus();
+        }
+        return;
       }
+      btn.classList.add('loading');
+      btn.disabled = true;
     });
   })();
 </script>
