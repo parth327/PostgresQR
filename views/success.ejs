@@ -12,7 +12,6 @@
       <img src="<%= qrUrl %>" alt="QR code for <%= record.name %>" />
     </div>
 
-    <p style="word-break:break-all; color:#6b7280; font-size:0.85rem;"><%= viewUrl %></p>
 
     <div class="actions-row" style="justify-content:center;">
       <a href="<%= qrUrl %>" download="qr-<%= record.name.replace(/\s+/g,'-') %>.png" class="btn">⬇ Download QR</a>
