@@ -105,18 +105,17 @@ router.post('/register', (req, res) => {
 
       await db.addRecord(record);
 
-      // Fire off Email / WhatsApp / SMS delivery of the QR code in the
-      // background. These call external providers (SMTP, Twilio) which can
-      // be slow — we don't want the user's redirect to hang waiting on them,
-      // and a delivery failure should never fail the registration itself.
-      const qrImageUrl = `${config.baseUrl}/qr/${id}`;
+      // Email the QR code to the registrant in the background. This calls
+      // an external SMTP provider which can be slow — we don't want the
+      // user's redirect to hang waiting on it, and a delivery failure
+      // should never fail the registration itself.
       notify
-        .notifyNewRegistration({ record, qrBuffer, viewUrl, qrImageUrl })
+        .notifyNewRegistration({ record, qrBuffer, viewUrl })
         .then((results) => {
-          console.log(`[notify] Registration ${id} delivery results:`, results);
+          console.log(`[notify] Registration ${id} delivery result:`, results);
         })
         .catch((notifyErr) => {
-          console.error(`[notify] Unexpected error sending notifications for ${id}:`, notifyErr);
+          console.error(`[notify] Unexpected error sending notification for ${id}:`, notifyErr);
         });
 
       res.redirect(`/success/${id}`);
