@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "create-admin": "node utils/create-admin.js"
+    "create-admin": "node utils/create-admin.js",
+    "test-email": "node utils/test-email.js"
   },
   "dependencies": {
     "express": "^4.19.2",
