@@ -1,29 +1,45 @@
-const nodemailer = require('nodemailer');
+const https = require('https');
 const config = require('../config');
 
-let mailTransporter = null;
-let mailTransporterChecked = false;
-
-function getMailTransporter() {
-if (mailTransporterChecked) return mailTransporter;
-mailTransporterChecked = true;
-
-const missing = [];
-if (!config.email.host) missing.push('SMTP_HOST');
-if (!config.email.user) missing.push('SMTP_USER');
-if (!config.email.pass) missing.push('SMTP_PASS');
-if (missing.length) {
-console.warn(`[notify] Email disabled: missing ${missing.join(', ')} in your .env file.`);
-return null;
+function brevoRequest(payload) {
+return new Promise((resolve, reject) => {
+const body = JSON.stringify(payload);
+const req = https.request(
+{
+hostname: 'api.brevo.com',
+path: '/v3/smtp/email',
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+Accept: 'application/json',
+'api-key': config.email.brevoApiKey,
+'Content-Length': Buffer.byteLength(body),
+},
+timeout: 15000,
+},
+(res) => {
+let data = '';
+res.on('data', (chunk) => { data += chunk; });
+res.on('end', () => {
+let parsed = {};
+try { parsed = data ? JSON.parse(data) : {}; } catch (e) { parsed = { raw: data }; }
+if (res.statusCode >= 200 && res.statusCode < 300) {
+resolve(parsed);
+} else {
+const err = new Error(parsed.message || `Brevo API returned HTTP ${res.statusCode}`);
+err.statusCode = res.statusCode;
+err.code = parsed.code;
+err.details = parsed;
+reject(err);
 }
-
-mailTransporter = nodemailer.createTransport({
-host: config.email.host,
-port: config.email.port,
-secure: config.email.secure, // true for port 465, false for 587/others
-auth: { user: config.email.user, pass: config.email.pass },
 });
-return mailTransporter;
+}
+);
+req.on('timeout', () => req.destroy(new Error('Brevo API request timed out')));
+req.on('error', reject);
+req.write(body);
+req.end();
+});
 }
 
 async function sendEmailQr({ to, name, qrBuffer, viewUrl }) {
@@ -32,52 +48,40 @@ console.warn('[notify] Email skipped: no email address on this record.');
 return { skipped: true, reason: 'no email address on record' };
 }
 
-const transporter = getMailTransporter();
-if (!transporter) {
-// getMailTransporter() already logged exactly which env var is missing.
-return { skipped: true, reason: 'smtp not configured' };
+const missing = [];
+if (!config.email.brevoApiKey) missing.push('BREVO_API_KEY');
+if (!config.email.from) missing.push('EMAIL_FROM');
+if (missing.length) {
+console.warn(`[notify] Email disabled: missing ${missing.join(', ')} in your .env file.`);
+return { skipped: true, reason: 'brevo not configured' };
 }
 
 try {
-const info = await transporter.sendMail({
-from: config.email.from,
-to: to.trim(),
+const result = await brevoRequest({
+sender: { name: config.email.fromName, email: config.email.from },
+to: [{ email: to.trim(), name: name || undefined }],
 subject: 'Your Registration QR Code - Yuva Sangam 2026',
-text:
+textContent:
 `Namaste ${name},\n\n` +
 `Thank you for registering for Yuva Sangam 2026. Your QR code is attached to this email.\n` +
 `Please show it at check-in.\n\n` +
 `You can also view it any time at: ${viewUrl}\n`,
-html:
+htmlContent:
 `<p>Namaste ${name},</p>` +
 `<p>Thank you for registering for <strong>Yuva Sangam 2026</strong>. Your QR code is attached ` +
-`to this email — please show it at check-in.</p>` +
-`<p><img src="cid:qrcode" alt="Your QR Code" style="width:220px;height:220px;" /></p>`,
-attachments: [
-{ filename: 'qr-code.png', content: qrBuffer, cid: 'qrcode' },
-],
+`to this email as a PNG — please show it at check-in.</p>` +
+`<p>You can also view it any time at: <a href="${viewUrl}">${viewUrl}</a></p>`,
+attachment: [{ content: qrBuffer.toString('base64'), name: 'qr-code.png' }],
 });
 
-// sendMail() can resolve without throwing even if the receiving server
-// rejected the recipient — info.rejected catches that case too.
-if (info.rejected && info.rejected.length) {
-console.error(`[notify] FAIL: ${to.trim()} was rejected by the mail server.`, { rejected: info.rejected, response: info.response });
-return { success: false, error: `Recipient rejected: ${info.rejected.join(', ')}` };
-}
-
-console.log(`[notify] SUCCESS: email sent to ${to.trim()} — messageId=${info.messageId} response="${info.response}"`);
-return { success: true, messageId: info.messageId };
+console.log(`[notify] SUCCESS: email sent to ${to.trim()} via Brevo — messageId=${result.messageId}`);
+return { success: true, messageId: result.messageId };
 } catch (err) {
-// err.code / responseCode / command are the actual useful bits for SMTP
-// failures — err.message alone is often just a vague "Invalid login".
-// Common err.code values: EAUTH (wrong user/pass), ECONNECTION/ETIMEDOUT
-// (can't reach host/port), ESOCKET (TLS/port mismatch, e.g. secure flag
-// wrong for the port).
-console.error(`[notify] FAIL: could not send email to ${to.trim()}.`, {
+console.error(`[notify] FAIL: could not send email to ${to.trim()} via Brevo.`, {
 message: err.message,
+statusCode: err.statusCode,
 code: err.code,
-responseCode: err.responseCode,
-command: err.command,
+details: err.details,
 });
 return { success: false, error: err.message, code: err.code };
 }
