@@ -1,0 +1,19 @@
+<% var pageTitle = 'Restricted - Admin Access Only'; %>
+<%- include('partials/header') %>
+
+<div class="container login-wrap">
+  <div class="card login-card text-center fade-in-up restricted-card">
+    <div class="login-icon restricted-icon">🔒</div>
+    <h1 class="mt-0">આ માહિતી ફક્ત એડમિન માટે છે</h1>
+    <p class="subtitle">This profile's details are private. Only a logged-in <strong>Yuva Sangam admin</strong> can view what was scanned from this QR code.</p>
+
+    <div class="actions-row" style="justify-content:center;">
+      <a href="<%= loginUrl %>" class="btn btn-glow">🔐 એડમિન લોગિન કરો</a>
+      <a href="/register" class="btn btn-secondary">← પાછા નોંધણી પર જાઓ</a>
+    </div>
+
+    <p class="small-note">If you registered and are looking for your own details, please contact an event volunteer — for everyone's privacy, profile data is only shown to verified admins.</p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
