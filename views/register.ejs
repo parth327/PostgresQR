@@ -53,6 +53,12 @@
             <label for="f-whatsapp">💬 વોટ્સએપ નંબર</label>
             <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" />
           </div>
+
+          <div class="field">
+            <label for="f-email">📧 ઈમેલ <span class="req">*</span></label>
+            <input type="email" id="f-email" name="email" required value="<%= formData.email || '' %>" placeholder="દા.ત. name@example.com" />
+            <small class="field-hint">તમારો QR કોડ આ ઈમેલ પર મોકલવામાં આવશે.</small>
+          </div>
         </div>
       </div>
 
@@ -124,9 +130,6 @@
       <!-- Kept for future use / admin export compatibility, not shown on the public form -->
       <div class="field" style="display:none;">
         <input type="date" name="dob" value="<%= formData.dob || '' %>" />
-      </div>
-      <div class="field" style="display:none;">
-        <input type="email" name="email" value="<%= formData.email || '' %>" />
       </div>
       <div class="field" style="display:none;">
         <select name="gender">
