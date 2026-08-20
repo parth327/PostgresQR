@@ -111,7 +111,7 @@ return { skipped: true, reason: 'brevo not configured' };
 try {
 const bodyHtml =
   `<p style="margin:0 0 12px;">નમસ્તે ${name},</p>` +
-  `<p style="margin:0 0 12px;">'યુવા સંગમ ૨૦૨૬' માટે નોંધણી કરાવવા બદલ આભાર. તમારો QR કોડ નીચે તથા આ ઈમેલ સાથે PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.</p>` +
+  `<p style="margin:0 0 12px;">'યુવા સંગમ ૨૦૨૬' માટે નોંધણી કરાવવા બદલ આભાર. તમારો QR કોડ આ ઈમેલ સાથે PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.</p>` +
   `<p style="margin:0;">કૃપા કરીને ચેક-ઈન સમયે તે બતાવશો.</p>`;
 
 const htmlContent = buildEmailHtml({
