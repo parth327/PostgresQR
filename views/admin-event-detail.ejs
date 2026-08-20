@@ -98,7 +98,9 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:24px 0 8px;">
     <h2 style="margin:0;">✓ હાજરી યાદી (<%= attendance.length %>)</h2>
     <div class="actions-row" style="margin:0;">
-      <a href="/admin/events/<%= event.id %>/email" class="btn">📧 ઇમેલ મોકલો</a>
+      <% if (adminRole === 'main') { %>
+        <a href="/admin/events/<%= event.id %>/email" class="btn">📧 ઇમેલ મોકલો</a>
+      <% } %>
       <% if (attendance.length > 0) { %>
         <a href="/admin/events/<%= event.id %>/export?<%= attQuery %>" class="btn btn-secondary btn-sm">⬇ એક્સેલ</a>
         <a href="/admin/events/<%= event.id %>/export?format=csv&<%= attQuery %>" class="btn btn-secondary btn-sm">⬇ CSV</a>
