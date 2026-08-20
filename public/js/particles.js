@@ -107,7 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
       p.then(() => {
         isPlaying = !audioPlayer.muted;
         setIcons(isPlaying);
-      }).catch(() => {
+      }).catch((err) => {
+        console.log('Ambient audio play blocked:', err.message);
         isPlaying = false;
         setIcons(false);
       });
@@ -129,7 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Browsers require a real user gesture before unmuted sound can play.
     // Unmute (and start, if needed) on the first genuine interaction.
-    const autoPlayEvents = ['click', 'touchstart', 'keydown'];
+    // Covering mousedown too (in addition to click) lets us catch the
+    // interaction a beat earlier on desktop.
+    const autoPlayEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
     function unmuteOnFirstInteraction() {
       autoPlayEvents.forEach((ev) => window.removeEventListener(ev, unmuteOnFirstInteraction));
       if (userDisabled) return; // user already turned it off on purpose
