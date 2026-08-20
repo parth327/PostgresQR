@@ -121,7 +121,9 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /admin/dashboard -> list of all saved records + their QR codes
-// Both admin roles can view/export the full user list; delete is main-admin only.
+// Both admin roles can view/export the full user list; delete and the custom
+// event-email sender are main-admin only — event admins cannot delete users
+// or send emails.
 router.get('/dashboard', requireAdmin, async (req, res, next) => {
   try {
     const filters = extractRecordFilters(req.query);
@@ -576,7 +578,8 @@ function sleep(ms) {
 }
 
 // GET /admin/events/:id/email -> compose form for the manual event email
-router.get('/events/:id/email', requireAdmin, requireEventAccess, async (req, res, next) => {
+// (main admin only — event admins can no longer access the custom email sender)
+router.get('/events/:id/email', requireMainAdmin, async (req, res, next) => {
   try {
     const event = await db.getEventById(req.params.id);
     if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
@@ -612,7 +615,7 @@ function buildEmailBodyHtml(message) {
 //  2. A real send to "all registered users" / "not checked in" requires an
 //     explicit confirmation round-trip showing the recipient count first —
 //     the first submit only previews, the second (with confirmed=1) sends.
-router.post('/events/:id/email', requireAdmin, requireEventAccess, async (req, res, next) => {
+router.post('/events/:id/email', requireMainAdmin, async (req, res, next) => {
   try {
     const event = await db.getEventById(req.params.id);
     if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
