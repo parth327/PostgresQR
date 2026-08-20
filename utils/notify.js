@@ -81,8 +81,6 @@ function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, imageCid }) {
               <div style="font-size:15px;line-height:1.7;color:#1f2937;">${bodyHtml}</div>
             </td>
           </tr>
-          ${qrImage}
-          ${ctaButton}
           <tr>
             <td style="padding:20px 32px;background:#f7f6fd;border-top:1px solid #e6e3f5;text-align:center;">
               <div style="font-size:12px;color:#6b7280;">યુવા સંગમ ૨૦૨૬ • રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ</div>
