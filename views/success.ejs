@@ -1,22 +1,23 @@
-<% var pageTitle = 'Registration Successful'; %>
+<% var pageTitle = 'નોંધણી સફળ'; %>
+<% var bodyClass = 'page-register'; %>
 <%- include('partials/header') %>
 
 <div class="container">
   <div class="card text-center fade-in-up">
-    <div class="alert alert-success">✅ Your details have been saved successfully!</div>
+    <div class="alert alert-success stagger" style="--d:1">✅ તમારી વિગતો સફળતાપૂર્વક સાચવવામાં આવી છે!</div>
 
-    <h1 class="mt-0">Hi <%= record.name %>, here's your QR Code</h1>
-    <p class="subtitle">🔒 Your details are private. Only a Yuva Sangam admin can view them by scanning this QR at check-in.</p>
-    <p class="subtitle">📧 We're also emailing this QR code to you — it should arrive shortly.</p>
+    <h1 class="mt-0 stagger" style="--d:2">નમસ્તે <%= record.name %>, આ રહ્યો તમારો QR કોડ.</h1>
+    <p class="subtitle stagger" style="--d:3">🔒 તમારી વિગતો ખાનગી છે. ચેક-ઇન કરતી વખતે આ QR કોડ સ્કેન કરીને ફક્ત યુવા સંગમ એડમિન જ તેમને જોઈ શકે છે.</p>
+    <p class="subtitle stagger" style="--d:4">📧 અમે તમને આ QR કોડ પણ ઇમેઇલ કરી રહ્યા છીએ — તે ટૂંક સમયમાં આવી જશે.</p>
 
-    <div class="qr-box">
+    <div class="qr-box stagger" style="--d:5">
       <img src="<%= qrUrl %>" alt="QR code for <%= record.name %>" />
     </div>
 
 
-    <div class="actions-row" style="justify-content:center;">
-      <a href="<%= qrUrl %>" download="qr-<%= record.name.replace(/\s+/g,'-') %>.png" class="btn">⬇ Download QR</a>
-      <a href="/register" class="btn btn-secondary">Register Another</a>
+    <div class="actions-row stagger" style="--d:6; justify-content:center;">
+      <a href="<%= qrUrl %>" download="qr-<%= record.name.replace(/\s+/g,'-') %>.png" class="btn btn-glow">⬇ QR ડાઉનલોડ કરો</a>
+      <a href="/register" class="btn btn-secondary">અન્ય નોંધણી કરો</a>
     </div>
   </div>
 </div>

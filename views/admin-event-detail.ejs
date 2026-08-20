@@ -1,275 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= event.event_name %> - Event Details</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .detail-container {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    .event-header {
-      background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-    }
-    .event-header h1 {
-      margin: 0 0 1rem 0;
-      font-size: 2rem;
-    }
-    .event-info {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-      border-left: 4px solid #6d28d9;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    .event-info p {
-      margin: 0.75rem 0;
-      font-size: 1.05rem;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    .stat-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-    .stat-number {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #6d28d9;
-      margin-bottom: 0.5rem;
-    }
-    .stat-label {
-      color: #666;
-      font-size: 0.95rem;
-    }
-    .attendance-section h2 {
-      color: #333;
-      margin-bottom: 1rem;
-      margin-top: 2rem;
-    }
-    .attendance-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    .attendance-table th {
-      background: #6d28d9;
-      color: white;
-      padding: 1rem;
-      text-align: left;
-      font-weight: bold;
-    }
-    .attendance-table td {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #eee;
-    }
-    .attendance-table tr:hover {
-      background: #f5f5f5;
-    }
-    .attendance-table tr:last-child td {
-      border-bottom: none;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 2rem;
-      background: #f9f9f9;
-      border-radius: 8px;
-      color: #999;
-    }
-    .action-buttons {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 2rem;
-      padding-top: 2rem;
-      border-top: 1px solid #ddd;
-      flex-wrap: wrap;
-    }
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-      display: inline-block;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-    .btn-primary {
-      background: #6d28d9;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #5b21b6;
-    }
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-    .btn-success:hover {
-      background: #218838;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
-  
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
-    a.btn, button.btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger { transition: transform .16s ease, box-shadow .16s ease, background .2s ease !important; }
-    a.btn:hover, button.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(109,40,217,0.22); }
-    .event-card, .stat-box, .attendee-card, .checkin-container, .events-container { animation: fadeInUp .5s cubic-bezier(.22,1,.36,1) both; }
-  </style>
-</head>
-<body>
-  <div class="topbar">
-    <a href="/register" class="brand"><span class="brand-dot"></span>યુવા સંગમ ૨૦૨૬</a>
-    <nav>
-      <a href="/admin/dashboard">Dashboard</a>
-      <form action="/admin/logout" method="POST" style="display:inline">
-        <button type="submit">Logout</button>
-      </form>
-    </nav>
+<% var pageTitle = event.event_name + ' - ઇવેન્ટ વિગતો'; %>
+<%
+  var attQuery = 'aLocation=' + encodeURIComponent(attendanceFilters.location)
+    + '&aEducation=' + encodeURIComponent(attendanceFilters.education)
+    + '&aGender=' + encodeURIComponent(attendanceFilters.gender)
+    + '&checkedInFrom=' + encodeURIComponent(attendanceFilters.checkedInFrom)
+    + '&checkedInTo=' + encodeURIComponent(attendanceFilters.checkedInTo)
+    + '&checkedInBy=' + encodeURIComponent(attendanceFilters.checkedInBy);
+%>
+<%- include('partials/header') %>
+
+<div class="wide-container fade-in-up">
+  <div class="event-hero">
+    <h1><%= event.event_name %></h1>
+    <p>📊 હાજરી અહેવાલ</p>
   </div>
-  <div class="detail-container">
-    <div class="event-header">
-      <h1><%= event.event_name %></h1>
-      <p>📊 Attendance Report</p>
-    </div>
 
-    <div class="event-info">
-      <p>
-        <strong>📅 Date:</strong> 
-        <%= formatEventDate(event.event_date) %>
-      </p>
-      <% if (event.location) { %>
-        <p><strong>📍 Location:</strong> <%= event.location %></p>
-      <% } %>
-      <p>
-        <strong>Status:</strong> 
-        <span style="color: #6d28d9; font-weight: bold; text-transform: uppercase;">
-          <%= event.status %>
-        </span>
-      </p>
-      <% if (event.event_description) { %>
-        <p><strong>Description:</strong> <%= event.event_description %></p>
-      <% } %>
-    </div>
+  <div class="info-card">
+    <p><strong>📅 તારીખ:</strong> <%= formatEventDateGu(event.event_date) %></p>
+    <% if (event.location) { %>
+      <p><strong>📍 સ્થળ:</strong> <%= event.location %></p>
+    <% } %>
+    <p>
+      <strong>સ્થિતિ:</strong>
+      <span class="status-badge status-<%= event.status %>">
+        <%= event.status === 'upcoming' ? 'આગામી' : event.status === 'ongoing' ? 'ચાલુ છે' : event.status === 'completed' ? 'પૂર્ણ' : event.status.toUpperCase() %>
+      </span>
+    </p>
+    <% if (event.event_description) { %>
+      <p><strong>વર્ણન:</strong> <%= event.event_description %></p>
+    <% } %>
+  </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number"><%= stats.total_checked_in %></div>
-        <div class="stat-label">Users Checked In</div>
+  <div class="stat-cards">
+    <div class="stat-card" style="--d:1;">
+      <div class="num"><%= stats.total_checked_in %></div>
+      <div class="lbl">ચેક-ઇન થયેલા વપરાશકર્તાઓ</div>
+    </div>
+    <div class="stat-card" style="--d:2;">
+      <div class="num"><%= stats.unique_admins %></div>
+      <div class="lbl">ચેક-ઇન કરનાર એડમિન</div>
+    </div>
+    <% if (stats.first_checkin) { %>
+      <div class="stat-card" style="--d:3;">
+        <div class="num" style="font-size:1.3rem;"><%= formatTimeGu(stats.first_checkin) %></div>
+        <div class="lbl">પ્રથમ ચેક-ઇન</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-number"><%= stats.unique_admins %></div>
-        <div class="stat-label">Admins Checking In</div>
+      <div class="stat-card" style="--d:4;">
+        <div class="num" style="font-size:1.3rem;"><%= formatTimeGu(stats.last_checkin) %></div>
+        <div class="lbl">છેલ્લું ચેક-ઇન</div>
       </div>
-      <% if (stats.first_checkin) { %>
-        <div class="stat-card">
-          <div class="stat-label">First Check-In</div>
-          <div style="font-size: 1.2rem; margin-top: 0.5rem; font-weight: bold;">
-            <%= formatTime(stats.first_checkin) %>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Last Check-In</div>
-          <div style="font-size: 1.2rem; margin-top: 0.5rem; font-weight: bold;">
-            <%= formatTime(stats.last_checkin) %>
-          </div>
-        </div>
-      <% } %>
-    </div>
+    <% } %>
+  </div>
 
-    <div class="attendance-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <h2 style="margin: 0;">✓ Attendance List</h2>
-        <% if (attendance.length > 0) { %>
-          <a href="/admin/events/<%= event.id %>/export" class="btn btn-secondary" style="padding: 0.5rem 1rem;">⬇ Export to Excel</a>
-        <% } %>
+  <div class="card" style="margin-top:24px; padding:18px 20px;">
+    <form method="GET" action="/admin/events/<%= event.id %>" class="form-grid" style="margin-bottom:0;">
+      <div class="field">
+        <label for="af-location">એરિયા</label>
+        <select id="af-location" name="aLocation">
+          <option value="">બધા</option>
+          <% filterOptions.locations.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= attendanceFilters.location === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
       </div>
+      <div class="field">
+        <label for="af-education">અભ્યાસ</label>
+        <input type="text" id="af-education" name="aEducation" value="<%= attendanceFilters.education %>" placeholder="દા.ત. B.Tech" />
+      </div>
+      <div class="field">
+        <label for="af-gender">લિંગ</label>
+        <select id="af-gender" name="aGender">
+          <option value="">બધા</option>
+          <% filterOptions.genders.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= attendanceFilters.gender === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="af-checkedInBy">એડમિન દ્વારા</label>
+        <input type="text" id="af-checkedInBy" name="checkedInBy" value="<%= attendanceFilters.checkedInBy %>" placeholder="એડમિન વપરાશકર્તા નામ" />
+      </div>
+      <div class="field">
+        <label for="af-from">ચેક-ઇન તારીખ (થી)</label>
+        <input type="date" id="af-from" name="checkedInFrom" value="<%= attendanceFilters.checkedInFrom %>" />
+      </div>
+      <div class="field">
+        <label for="af-to">ચેક-ઇન તારીખ (સુધી)</label>
+        <input type="date" id="af-to" name="checkedInTo" value="<%= attendanceFilters.checkedInTo %>" />
+      </div>
+      <div class="field full actions-row" style="margin:0;">
+        <button type="submit" class="btn">ફિલ્ટર લાગુ કરો</button>
+        <a href="/admin/events/<%= event.id %>" class="btn btn-secondary">સાફ કરો</a>
+      </div>
+    </form>
+  </div>
 
-      <% if (attendance.length === 0) { %>
-        <div class="empty-state">
-          <p>No users have checked in yet.</p>
-        </div>
-      <% } else { %>
-        <div class="table-wrap">
-          <table class="attendance-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>DOB</th>
-                <th>Gender</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Location</th>
-                <th>Pincode</th>
-                <th>Address</th>
-                <th>Education</th>
-                <th>Occupation</th>
-                <th>Notes</th>
-                <th>Temperature</th>
-                <th>Checked In</th>
-                <th>By Admin</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% attendance.forEach(person => { %>
-                <tr>
-                  <td><strong><%= person.name %></strong></td>
-                  <td><small><%= person.dob || '—' %></small></td>
-                  <td><small><%= person.gender || '—' %></small></td>
-                  <td><%= person.phone %></td>
-                  <td><%= person.email || '—' %></td>
-                  <td><%= person.location || '—' %></td>
-                  <td><small><%= person.pincode || '—' %></small></td>
-                  <td><small><%= person.address || '—' %></small></td>
-                  <td><small><%= person.education || '—' %></small></td>
-                  <td><small><%= person.occupation || '—' %></small></td>
-                  <td><small><%= person.record_notes || '—' %></small></td>
-                  <td><small><%= person.temperature || '—' %></small></td>
-                  <td>
-                    <small><%= formatDateTime(person.checked_in_at) %></small>
-                  </td>
-                  <td><small><%= person.checked_in_by %></small></td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:24px 0 8px;">
+    <h2 style="margin:0;">✓ હાજરી યાદી (<%= attendance.length %>)</h2>
+    <div class="actions-row" style="margin:0;">
+      <a href="/admin/events/<%= event.id %>/email" class="btn">📧 ઇમેલ મોકલો</a>
+      <% if (attendance.length > 0) { %>
+        <a href="/admin/events/<%= event.id %>/export?<%= attQuery %>" class="btn btn-secondary btn-sm">⬇ એક્સેલ</a>
+        <a href="/admin/events/<%= event.id %>/export?format=csv&<%= attQuery %>" class="btn btn-secondary btn-sm">⬇ CSV</a>
       <% } %>
-    </div>
-
-    <div class="action-buttons">
-      <a href="/admin/checkin?eventId=<%= event.id %>" class="btn btn-success">
-        ➕ Continue Check-In
-      </a>
-      <a href="/admin/events" class="btn btn-secondary">
-        ← Back to Events
-      </a>
     </div>
   </div>
-</body>
-</html>
+
+  <% if (attendance.length === 0) { %>
+    <div class="empty-state card">
+      <p>કોઈ હાજરી રેકોર્ડ મળ્યો નહીં.</p>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>નામ</th>
+            <th>જન્મ તારીખ</th>
+            <th>લિંગ</th>
+            <th>ફોન</th>
+            <th>ઈમેલ</th>
+            <th>એરિયા</th>
+            <th>પિનકોડ</th>
+            <th>સરનામું</th>
+            <th>અભ્યાસ</th>
+            <th>વ્યવસાય</th>
+            <th>નોંધ</th>
+            <th>તાપમાન</th>
+            <th>ચેક-ઇન સમય</th>
+            <th>એડમિન દ્વારા</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% attendance.forEach(function(person) { %>
+            <tr>
+              <td data-label="નામ"><strong><%= person.name %></strong></td>
+              <td data-label="જન્મ તારીખ"><%= person.dob || '—' %></td>
+              <td data-label="લિંગ"><%= person.gender || '—' %></td>
+              <td data-label="ફોન"><%= person.phone %></td>
+              <td data-label="ઈમેલ"><%= person.email || '—' %></td>
+              <td data-label="એરિયા"><%= person.location === 'અન્ય' ? (person.location_other || person.location) : (person.location || '—') %></td>
+              <td data-label="પિનકોડ"><%= person.pincode || '—' %></td>
+              <td data-label="સરનામું"><%= person.address || '—' %></td>
+              <td data-label="અભ્યાસ"><%= person.education || '—' %></td>
+              <td data-label="વ્યવસાય"><%= person.occupation || '—' %></td>
+              <td data-label="નોંધ"><%= person.record_notes || '—' %></td>
+              <td data-label="તાપમાન"><%= person.temperature || '—' %></td>
+              <td data-label="ચેક-ઇન સમય"><%= formatDateTimeGu(person.checked_in_at) %></td>
+              <td data-label="એડમિન દ્વારા"><%= person.checked_in_by %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <div class="actions-row" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+    <a href="/admin/checkin?eventId=<%= event.id %>" class="btn">➕ ચેક-ઇન ચાલુ રાખો</a>
+    <a href="/admin/events" class="btn btn-secondary">← ઇવેન્ટ્સ પર પાછા જાઓ</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

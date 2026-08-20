@@ -106,4 +106,36 @@ async function sendExcelFile(res, { filename, sheetName, title, subtitle, header
   res.end();
 }
 
-module.exports = { sendExcelFile, safeFilename };
+function csvEscape(val) {
+  const s = val === undefined || val === null || val === '' ? '—' : String(val);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+/**
+ * Streams the same kind of {columns, rows} data as sendExcelFile, but as a
+ * CSV download instead. Kept simple (no title/subtitle banner rows) since
+ * CSV has no cell styling — it's the "plain data" alternative to the
+ * formatted Excel export.
+ *
+ * @param {import('express').Response} res
+ * @param {Object} opts
+ * @param {string} opts.filename
+ * @param {Array<{header:string, key:string}>} opts.columns
+ * @param {Array<Object>} opts.rows
+ */
+function sendCsvFile(res, { filename, columns, rows }) {
+  const lines = [columns.map((c) => csvEscape(c.header)).join(',')];
+  rows.forEach((r) => {
+    lines.push(columns.map((c) => csvEscape(r[c.key])).join(','));
+  });
+  // Leading BOM so Excel opens the UTF-8 file (Gujarati text) correctly.
+  const csv = '﻿' + lines.join('\r\n');
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', contentDisposition(filename));
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(csv);
+}
+
+module.exports = { sendExcelFile, sendCsvFile, safeFilename };

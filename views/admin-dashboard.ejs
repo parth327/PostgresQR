@@ -1,92 +1,175 @@
-<% var pageTitle = 'Admin Dashboard'; var isAdmin = true; %>
+<% var pageTitle = 'એડમિન ડેશબોર્ડ'; var isAdmin = true; %>
+<%
+  var hasFilters = filters.location || filters.education || filters.interest || filters.joinMedium
+    || filters.gender || filters.ageMin || filters.ageMax || filters.dateFrom || filters.dateTo;
+  var filterQuery = 'search=' + encodeURIComponent(filters.search)
+    + '&location=' + encodeURIComponent(filters.location)
+    + '&education=' + encodeURIComponent(filters.education)
+    + '&interest=' + encodeURIComponent(filters.interest)
+    + '&joinMedium=' + encodeURIComponent(filters.joinMedium)
+    + '&gender=' + encodeURIComponent(filters.gender)
+    + '&ageMin=' + encodeURIComponent(filters.ageMin)
+    + '&ageMax=' + encodeURIComponent(filters.ageMax)
+    + '&dateFrom=' + encodeURIComponent(filters.dateFrom)
+    + '&dateTo=' + encodeURIComponent(filters.dateTo);
+%>
 <%- include('partials/header') %>
 
 <div class="wide-container fade-in-up">
-  <h1>Admin Dashboard</h1>
-  <p class="subtitle">Welcome, <%= adminUsername %>. Below is every user record saved through the registration form.</p>
+  <h1>એડમિન ડેશબોર્ડ</h1>
+  <p class="subtitle">સ્વાગત છે, <%= adminUsername %>. નોંધણી ફોર્મ દ્વારા સાચવેલા બધા વપરાશકર્તા રેકોર્ડ નીચે છે.</p>
 
   <div class="stat-cards">
     <div class="stat-card" style="--d:1; animation-delay:0.05s;">
       <div class="num"><%= total %></div>
-      <div class="lbl">Total Registered Users</div>
+      <div class="lbl">કુલ નોંધાયેલા વપરાશકર્તાઓ</div>
     </div>
     <div class="stat-card" style="--d:2; animation-delay:0.12s;">
       <div class="num"><%= records.length %></div>
-      <div class="lbl">Showing (filtered)</div>
+      <div class="lbl">બતાવેલા (ફિલ્ટર થયેલા)</div>
     </div>
   </div>
 <div style="margin: 1.5rem 0 2rem; text-align: center;">
   <a href="/admin/events" class="btn">
-    📋 Manage Events
+    📋 <%= adminRole === 'main' ? 'ઇવેન્ટ્સ મેનેજ કરો' : 'મારો ઇવેન્ટ' %>
   </a>
 </div>
 
   <form class="search-bar" method="GET" action="/admin/dashboard">
-    <input type="text" name="search" value="<%= search %>" placeholder="Search by name, location, education, phone or email..." />
-    <button type="submit" class="btn">Search</button>
-    <% if (search) { %><a href="/admin/dashboard" class="btn btn-secondary">Clear</a><% } %>
-    <a href="/admin/dashboard/export<%= search ? '?search=' + encodeURIComponent(search) : '' %>" class="btn btn-secondary">⬇ Export to Excel</a>
+    <input type="text" name="search" value="<%= search %>" placeholder="નામ, એરિયા, અભ્યાસ, ફોન અથવા ઈમેલ પરથી શોધો..." />
+    <button type="submit" class="btn">શોધો</button>
+    <% if (search || hasFilters) { %><a href="/admin/dashboard" class="btn btn-secondary">સાફ કરો</a><% } %>
+    <a href="/admin/dashboard/export?<%= filterQuery %>" class="btn btn-secondary">⬇ એક્સેલ</a>
+    <a href="/admin/dashboard/export?format=csv&<%= filterQuery %>" class="btn btn-secondary">⬇ CSV</a>
   </form>
+
+  <details class="card" style="margin-bottom:20px;" <%= hasFilters ? 'open' : '' %>>
+    <summary style="cursor:pointer; font-weight:700; color:var(--primary);">🔍 વધુ ફિલ્ટર</summary>
+    <form method="GET" action="/admin/dashboard" class="form-grid" style="margin-top:16px;">
+      <input type="hidden" name="search" value="<%= filters.search %>" />
+      <div class="field">
+        <label for="f-flt-location">એરિયા</label>
+        <select id="f-flt-location" name="location">
+          <option value="">બધા</option>
+          <% filterOptions.locations.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= filters.location === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-flt-education">અભ્યાસ</label>
+        <input type="text" id="f-flt-education" name="education" value="<%= filters.education %>" placeholder="દા.ત. B.Tech" />
+      </div>
+      <div class="field">
+        <label for="f-flt-interest">રુચિ</label>
+        <select id="f-flt-interest" name="interest">
+          <option value="">બધા</option>
+          <% filterOptions.interests.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= filters.interest === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-flt-joinMedium">જોડાણનું માધ્યમ</label>
+        <select id="f-flt-joinMedium" name="joinMedium">
+          <option value="">બધા</option>
+          <% filterOptions.joinMediums.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= filters.joinMedium === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-flt-gender">લિંગ</label>
+        <select id="f-flt-gender" name="gender">
+          <option value="">બધા</option>
+          <% filterOptions.genders.forEach(function(opt) { %>
+            <option value="<%= opt %>" <%= filters.gender === opt ? 'selected' : '' %>><%= opt %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-flt-ageMin">ઉંમર (થી)</label>
+        <input type="number" id="f-flt-ageMin" name="ageMin" min="15" max="100" value="<%= filters.ageMin %>" />
+      </div>
+      <div class="field">
+        <label for="f-flt-ageMax">ઉંમર (સુધી)</label>
+        <input type="number" id="f-flt-ageMax" name="ageMax" min="15" max="100" value="<%= filters.ageMax %>" />
+      </div>
+      <div class="field">
+        <label for="f-flt-dateFrom">નોંધણી તારીખ (થી)</label>
+        <input type="date" id="f-flt-dateFrom" name="dateFrom" value="<%= filters.dateFrom %>" />
+      </div>
+      <div class="field">
+        <label for="f-flt-dateTo">નોંધણી તારીખ (સુધી)</label>
+        <input type="date" id="f-flt-dateTo" name="dateTo" value="<%= filters.dateTo %>" />
+      </div>
+      <div class="field full actions-row" style="margin:0;">
+        <button type="submit" class="btn">ફિલ્ટર લાગુ કરો</button>
+      </div>
+    </form>
+  </details>
 
   <% if (records.length === 0) { %>
     <div class="empty-state card">
-      <p>No records found<% if (search) { %> for "<%= search %>"<% } %>.</p>
-      <a href="/register" class="btn" style="margin-top:12px;">Open Registration Form</a>
+      <p>કોઈ રેકોર્ડ મળ્યો નહીં<% if (search) { %> "<%= search %>" માટે<% } %>.</p>
+      <a href="/register" class="btn" style="margin-top:12px;">નોંધણી ફોર્મ ખોલો</a>
     </div>
   <% } else { %>
     <div class="table-wrap">
       <table class="records-table">
         <thead>
           <tr>
-            <th>Actions</th>
+            <th>ક્રિયાઓ</th>
             <th>QR</th>
-            <th>Name</th>
-            <th>Age</th>
-            <th>Phone</th>
-            <th>WhatsApp</th>
-            <th>Area</th>
-            <th>Pincode</th>
-            <th>House No.</th>
-            <th>Society</th>
-            <th>Landmark</th>
-            <th>Education</th>
-            <th>Interest</th>
-            <th>Joined Via</th>
-            <th>Registered On</th>
+            <th>નામ</th>
+            <th>ઉંમર</th>
+            <th>ફોન</th>
+            <th>વોટ્સએપ</th>
+            <th>એરિયા</th>
+            <th>પિનકોડ</th>
+            <th>ઘર નંબર</th>
+            <th>સોસાયટી</th>
+            <th>લેન્ડમાર્ક</th>
+            <th>અભ્યાસ</th>
+            <th>રુચિ</th>
+            <th>જોડાણનું માધ્યમ</th>
+            <th>નોંધણી તારીખ</th>
           </tr>
         </thead>
         <tbody>
           <% records.forEach(function(r) { %>
             <tr>
               <td>
-                <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">View</a>
+                <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">જુઓ</a>
                 <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
+                <% if (adminRole === 'main') { %>
                 <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
-                      onsubmit="return confirm('Delete this record permanently?');">
-                  <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                      onsubmit="return confirm('આ રેકોર્ડ કાયમ માટે ડિલીટ કરવો છે?');">
+                  <button type="submit" class="btn btn-danger btn-sm">ડિલીટ</button>
                 </form>
+                <% } %>
               </td>
               <td><img src="<%= r.qrUrl %>" class="mini-qr" alt="qr" /></td>
-              <td data-label="Name"><%= r.name %></td>
-              <td data-label="Age"><%= r.age || '-' %></td>
-              <td data-label="Phone"><%= r.phone %></td>
-              <td data-label="WhatsApp"><%= r.whatsapp || '-' %></td>
-              <td data-label="Area"><%= r.location %></td>
-              <td data-label="Pincode"><%= r.pincode %></td>
-              <td data-label="House No."><%= r.houseNumber || '-' %></td>
-              <td data-label="Society"><%= r.society || '-' %></td>
-              <td data-label="Landmark"><%= r.landmark || '-' %></td>
-              <td data-label="Education"><%= r.education || '-' %></td>
-              <td data-label="Interest"><%= r.interest || '-' %></td>
-              <td data-label="Joined Via"><%= r.joinMedium === 'અન્ય' ? (r.joinMediumOther || r.joinMedium) : (r.joinMedium || '-') %></td>
-              <td data-label="Registered On"><%= formatShortDate(r.createdAt) %></td>
+              <td data-label="નામ"><%= r.name %></td>
+              <td data-label="ઉંમર"><%= r.age || '-' %></td>
+              <td data-label="ફોન"><%= r.phone %></td>
+              <td data-label="વોટ્સએપ"><%= r.whatsapp || '-' %></td>
+              <td data-label="એરિયા"><%= r.location === 'અન્ય' ? (r.locationOther || r.location) : r.location %></td>
+              <td data-label="પિનકોડ"><%= r.pincode %></td>
+              <td data-label="ઘર નંબર"><%= r.houseNumber || '-' %></td>
+              <td data-label="સોસાયટી"><%= r.society || '-' %></td>
+              <td data-label="લેન્ડમાર્ક"><%= r.landmark || '-' %></td>
+              <td data-label="અભ્યાસ"><%= r.education || '-' %></td>
+              <td data-label="રુચિ"><%= r.interest || '-' %></td>
+              <td data-label="જોડાણનું માધ્યમ"><%= r.joinMedium === 'અન્ય' ? (r.joinMediumOther || r.joinMedium) : (r.joinMedium || '-') %></td>
+              <td data-label="નોંધણી તારીખ"><%= formatShortDateGu(r.createdAt) %></td>
             </tr>
           <% }); %>
         </tbody>
       </table>
     </div>
   <% } %>
-  <p class="small-note">Share this registration link with users: <strong><%= baseUrl %>/register</strong></p>
+  <p class="small-note">આ નોંધણી લિંક વપરાશકર્તાઓ સાથે શેર કરો: <strong><%= baseUrl %>/register</strong></p>
 </div>
 
 <%- include('partials/footer') %>

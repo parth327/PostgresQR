@@ -1,0 +1,82 @@
+<% var pageTitle = event.event_name + ' - ઇમેલ મોકલો'; %>
+<%- include('partials/header') %>
+
+<div class="container fade-in-up">
+  <div class="card admin-form-card">
+    <h1 style="margin-bottom:4px;">📧 ઇવેન્ટ ઇમેલ મોકલો</h1>
+    <p class="subtitle"><%= event.event_name %></p>
+
+    <% if (result && result.testMode) { %>
+      <div class="msg-banner <%= result.sent ? 'success' : 'error' %>">
+        <% if (result.sent) { %>
+          ✓ ટેસ્ટ ઈમેલ <strong><%= result.to %></strong> પર સફળતાપૂર્વક મોકલાયો.
+        <% } else if (result.skipped) { %>
+          ⚠ ટેસ્ટ ઈમેલ મોકલાયો નહીં — ઈમેલ સેવા (Brevo) કન્ફિગર થયેલી નથી.
+        <% } else { %>
+          ✕ ટેસ્ટ ઈમેલ મોકલવામાં નિષ્ફળ.
+        <% } %>
+      </div>
+    <% } else if (result) { %>
+      <div class="msg-banner success">
+        ✓ <%= result.sent %> ઈમેલ સફળતાપૂર્વક મોકલાયા, <%= result.failed %> નિષ્ફળ, <%= result.skipped %> છોડી દેવાયા (ઈમેલ ન હોય તેવા)
+        — કુલ <%= result.total %> વપરાશકર્તાઓમાંથી.
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-error shake"><%= error %></div>
+    <% } %>
+
+    <% if (preview) { %>
+      <div class="msg-banner error" style="border:2px solid var(--danger);">
+        ⚠ આ ઈમેલ ખરેખર <strong><%= preview.count %> વપરાશકર્તાઓ</strong>ને (<%= preview.recipients === 'not-checked-in' ? 'આ ઇવેન્ટ માટે ચેક-ઇન ન કરેલા' : 'બધા નોંધાયેલા' %>) મોકલવામાં આવશે.
+        આ ક્રિયા પાછી લઈ શકાશે નહીં. કૃપા કરીને નીચે વિષય અને સંદેશ ફરી તપાસો, પછી જ મોકલો.
+      </div>
+    <% } %>
+
+    <form method="POST" action="/admin/events/<%= event.id %>/email">
+      <div class="field">
+        <label>કોને મોકલવું <span class="req">*</span></label>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+          <label style="font-weight:400; display:flex; align-items:center; gap:8px;">
+            <input type="radio" name="recipients" value="all" <%= formData.recipients !== 'not-checked-in' ? 'checked' : '' %> style="width:auto;" />
+            બધા નોંધાયેલા વપરાશકર્તાઓ (સંપૂર્ણ યાદી)
+          </label>
+          <label style="font-weight:400; display:flex; align-items:center; gap:8px;">
+            <input type="radio" name="recipients" value="not-checked-in" <%= formData.recipients === 'not-checked-in' ? 'checked' : '' %> style="width:auto;" />
+            આ ઇવેન્ટ માટે હજુ ચેક-ઇન ન કરેલા વપરાશકર્તાઓ
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="subject">વિષય <span class="req">*</span></label>
+        <input type="text" id="subject" name="subject" required value="<%= formData.subject || '' %>" placeholder="દા.ત. યુવા સંગમ ૨૦૨૬ - ઇવેન્ટ રીમાઇન્ડર" />
+      </div>
+
+      <div class="field">
+        <label for="message">સંદેશ <span class="req">*</span></label>
+        <textarea id="message" name="message" required rows="8" placeholder="તમારો સંદેશ અહીં લખો..."><%= formData.message || '' %></textarea>
+        <p class="help-text">દરેક ફકરો ખાલી લાઇનથી અલગ કરો — તે ઇમેલમાં અલગ ફકરા તરીકે દેખાશે.</p>
+      </div>
+
+      <div class="field">
+        <label for="testEmail">🧪 ટેસ્ટ મોડ (વૈકલ્પિક)</label>
+        <input type="email" id="testEmail" name="testEmail" placeholder="ફક્ત આ એક સરનામે ટેસ્ટ ઈમેલ મોકલો, દા.ત. તમારો પોતાનો ઈમેલ" />
+        <p class="help-text">આ ભરેલું હોય તો, વાસ્તવિક વપરાશકર્તાઓને બદલે ફક્ત આ એક સરનામે ટેસ્ટ ઈમેલ મોકલાશે — સામગ્રી ચકાસવા માટે પહેલા આનો ઉપયોગ કરો.</p>
+      </div>
+
+      <div class="actions-row">
+        <% if (preview) { %>
+          <button type="submit" name="confirmed" value="1" class="btn btn-danger btn-glow">✓ હા, <%= preview.count %> વપરાશકર્તાઓને મોકલો</button>
+          <a href="/admin/events/<%= event.id %>/email" class="btn btn-secondary">રદ કરો / ફેરફાર કરો</a>
+        <% } else { %>
+          <button type="submit" class="btn btn-glow">📤 મોકલો (ટેસ્ટ ન હોય તો પહેલા ગણતરી બતાવવામાં આવશે)</button>
+          <a href="/admin/events/<%= event.id %>" class="btn btn-secondary">રદ કરો</a>
+        <% } %>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

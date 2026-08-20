@@ -3,13 +3,53 @@ const express = require('express');
 const config = require('../config');
 const db = require('../db');
 const requireAdmin = require('../middleware/requireAdmin');
-const { verifyPassword } = require('../utils/auth');
-const { sendExcelFile, safeFilename } = require('../utils/excel');
+const requireMainAdmin = require('../middleware/requireMainAdmin');
+const requireEventAccess = require('../middleware/requireEventAccess');
+const { verifyPassword, hashPassword } = require('../utils/auth');
+const { sendExcelFile, sendCsvFile, safeFilename } = require('../utils/excel');
 const { formatEventDate, formatDateTime } = require('../utils/datetime');
+const notify = require('../utils/notify');
 
 const router = express.Router();
 
-// ==================== EXISTING ADMIN LOGIN ROUTES ====================
+// Filter dropdown option lists — mirror the registration form's choices
+// (views/register.ejs) so admins can filter on exactly what users could pick.
+const FILTER_OPTIONS = {
+  locations: ['કૃષ્ણા નગર', 'કુબેરનગર', 'સૈજપુર', 'સરદારનગર', 'નરોડા', 'હરિદર્શન', 'અન્ય'],
+  interests: ['સેવા', 'પર્યાવરણ', 'વાંચન', 'લેખન', 'વક્તા', 'રમત'],
+  joinMediums: ['શાખા', 'સાપ્તાહિક મિલન', 'અન્ય'],
+  genders: ['Male', 'Female', 'Other'],
+};
+
+// Pulls the user-list filter panel's fields out of req.query.
+function extractRecordFilters(query) {
+  return {
+    search: query.search || '',
+    location: query.location || '',
+    education: query.education || '',
+    interest: query.interest || '',
+    joinMedium: query.joinMedium || '',
+    gender: query.gender || '',
+    ageMin: query.ageMin || '',
+    ageMax: query.ageMax || '',
+    dateFrom: query.dateFrom || '',
+    dateTo: query.dateTo || '',
+  };
+}
+
+// Pulls the attendance filter panel's fields out of req.query.
+function extractAttendanceFilters(query) {
+  return {
+    location: query.aLocation || '',
+    education: query.aEducation || '',
+    gender: query.aGender || '',
+    checkedInFrom: query.checkedInFrom || '',
+    checkedInTo: query.checkedInTo || '',
+    checkedInBy: query.checkedInBy || '',
+  };
+}
+
+// ==================== ADMIN LOGIN ROUTES ====================
 
 // Only allow redirecting back to a safe, same-site path after login
 // (never to an absolute/external URL) to avoid open-redirect issues.
@@ -28,27 +68,49 @@ router.get('/login', (req, res) => {
 });
 
 // POST /admin/login
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const next = safeNext(req.body.next || req.query.next);
+router.post('/login', async (req, res, next) => {
+  try {
+    const { username, password, adminType } = req.body;
+    const nextUrl = safeNext(req.body.next || req.query.next);
 
-  if (!config.adminPasswordHash) {
-    return res.render('admin-login', {
-      error: 'Admin password is not configured on the server. Check the .env file.',
-      next,
-    });
+    // ---- Event Admin login: checked against the event_admins DB table ----
+    if (adminType === 'event') {
+      const eventAdmin = username ? await db.getEventAdminByUsername(username.trim()) : null;
+      const validPassword = eventAdmin && verifyPassword(password, eventAdmin.password_hash);
+
+      if (eventAdmin && validPassword) {
+        req.session.isAdmin = true;
+        req.session.adminRole = 'event';
+        req.session.adminUsername = eventAdmin.username;
+        req.session.adminEventId = eventAdmin.event_id;
+        return res.redirect(nextUrl);
+      }
+
+      return res.render('admin-login', { error: 'વપરાશકર્તા નામ અથવા પાસવર્ડ ખોટો છે.', next: nextUrl });
+    }
+
+    // ---- Main Admin login: unchanged, env-based, all rights ----
+    if (!config.adminPasswordHash) {
+      return res.render('admin-login', {
+        error: 'સર્વર પર એડમિન પાસવર્ડ સેટ કરેલો નથી. કૃપા કરીને .env ફાઇલ તપાસો.',
+        next: nextUrl,
+      });
+    }
+
+    const validUsername = username === config.adminUsername;
+    const validPassword = validUsername && verifyPassword(password, config.adminPasswordHash);
+
+    if (validUsername && validPassword) {
+      req.session.isAdmin = true;
+      req.session.adminRole = 'main';
+      req.session.adminUsername = username;
+      return res.redirect(nextUrl);
+    }
+
+    res.render('admin-login', { error: 'વપરાશકર્તા નામ અથવા પાસવર્ડ ખોટો છે.', next: nextUrl });
+  } catch (err) {
+    next(err);
   }
-
-  const validUsername = username === config.adminUsername;
-  const validPassword = validUsername && verifyPassword(password, config.adminPasswordHash);
-
-  if (validUsername && validPassword) {
-    req.session.isAdmin = true;
-    req.session.adminUsername = username;
-    return res.redirect(next);
-  }
-
-  res.render('admin-login', { error: 'Invalid username or password.', next });
 });
 
 // POST /admin/logout
@@ -59,10 +121,11 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /admin/dashboard -> list of all saved records + their QR codes
+// Both admin roles can view/export the full user list; delete is main-admin only.
 router.get('/dashboard', requireAdmin, async (req, res, next) => {
   try {
-    const search = (req.query.search || '').trim();
-    const records = search ? await db.searchRecords(search) : await db.getAllRecords();
+    const filters = extractRecordFilters(req.query);
+    const records = await db.queryRecords(filters);
     const total = await db.countRecords();
 
     // Get today's event for quick access
@@ -72,8 +135,11 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
     res.render('admin-dashboard', {
       records: records.map((r) => ({ ...r, qrUrl: `/qr/${r.id}` })),
       total,
-      search: req.query.search || '',
+      filters,
+      filterOptions: FILTER_OPTIONS,
+      search: filters.search,
       adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
       baseUrl: config.baseUrl,
       todayEvent,
       isAdmin: true,
@@ -87,7 +153,7 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
 router.get('/record/:id', requireAdmin, async (req, res, next) => {
   try {
     const record = await db.getRecordById(req.params.id);
-    if (!record) return res.status(404).render('404', { message: 'Record not found.' });
+    if (!record) return res.status(404).render('404', { message: 'આ રેકોર્ડ મળ્યો નહીં.' });
 
     // Get attendance history for this record
     const attendanceHistory = await db.getAttendanceByUser(req.params.id);
@@ -97,6 +163,7 @@ router.get('/record/:id', requireAdmin, async (req, res, next) => {
       photoUrl: record.hasPhoto ? `/photo/${record.id}` : null,
       qrUrl: `/qr/${record.id}`,
       isAdmin: true,
+      adminRole: req.session.adminRole,
       attendanceHistory,
     });
   } catch (err) {
@@ -104,8 +171,8 @@ router.get('/record/:id', requireAdmin, async (req, res, next) => {
   }
 });
 
-// POST /admin/delete/:id -> delete a record
-router.post('/delete/:id', requireAdmin, async (req, res, next) => {
+// POST /admin/delete/:id -> delete a record (main admin only)
+router.post('/delete/:id', requireMainAdmin, async (req, res, next) => {
   try {
     await db.deleteRecord(req.params.id);
     res.redirect('/admin/dashboard');
@@ -114,15 +181,108 @@ router.post('/delete/:id', requireAdmin, async (req, res, next) => {
   }
 });
 
-// ==================== NEW EVENT MANAGEMENT ROUTES ====================
+// ==================== EVENT ADMIN MANAGEMENT (main admin only) ====================
 
-// GET /admin/events -> list all events
+async function renderEventAdmins(req, res, extra = {}) {
+  const eventAdmins = await db.getAllEventAdmins();
+  const events = await db.getAllEvents();
+  res.render('admin-event-admins', {
+    eventAdmins,
+    events,
+    adminUsername: req.session.adminUsername,
+    adminRole: req.session.adminRole,
+    isAdmin: true,
+    error: null,
+    ...extra,
+  });
+}
+
+// GET /admin/event-admins -> list + create form
+router.get('/event-admins', requireMainAdmin, async (req, res, next) => {
+  try {
+    await renderEventAdmins(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/event-admins -> create a new event admin
+router.post('/event-admins', requireMainAdmin, async (req, res, next) => {
+  try {
+    const { username, eventId, password } = req.body;
+
+    if (!username || !username.trim() || !eventId || !password || !password.trim()) {
+      return renderEventAdmins(req, res, { error: 'બધી વિગતો (વપરાશકર્તા નામ, ઇવેન્ટ, પાસવર્ડ) ભરવી ફરજિયાત છે.' });
+    }
+
+    const existing = await db.getEventAdminByUsername(username.trim());
+    if (existing) {
+      return renderEventAdmins(req, res, { error: 'આ વપરાશકર્તા નામ પહેલેથી અસ્તિત્વમાં છે.' });
+    }
+
+    await db.createEventAdmin({
+      username: username.trim(),
+      passwordHash: hashPassword(password),
+      eventId,
+    });
+
+    res.redirect('/admin/event-admins');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/event-admins/:id/password -> reset an event admin's password
+router.post('/event-admins/:id/password', requireMainAdmin, async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (password && password.trim()) {
+      await db.updateEventAdminPassword(req.params.id, hashPassword(password));
+    }
+    res.redirect('/admin/event-admins');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/event-admins/:id/event -> reassign an event admin to a different event
+router.post('/event-admins/:id/event', requireMainAdmin, async (req, res, next) => {
+  try {
+    const { eventId } = req.body;
+    if (eventId) {
+      await db.updateEventAdminEvent(req.params.id, eventId);
+    }
+    res.redirect('/admin/event-admins');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/event-admins/:id/delete -> remove an event admin account
+router.post('/event-admins/:id/delete', requireMainAdmin, async (req, res, next) => {
+  try {
+    await db.deleteEventAdmin(req.params.id);
+    res.redirect('/admin/event-admins');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ==================== EVENT MANAGEMENT ROUTES ====================
+
+// GET /admin/events -> list all events (main admin); event admins are sent
+// straight to their own event's detail page since they only have one.
 router.get('/events', requireAdmin, async (req, res, next) => {
   try {
+    if (req.session.adminRole === 'event') {
+      return res.redirect(`/admin/events/${req.session.adminEventId}`);
+    }
+
     const events = await db.getAllEvents();
     res.render('admin-events', {
       events,
       adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
       isAdmin: true,
     });
   } catch (err) {
@@ -130,19 +290,21 @@ router.get('/events', requireAdmin, async (req, res, next) => {
   }
 });
 
-// GET /admin/events/create -> show create event form
-router.get('/events/create', requireAdmin, (req, res) => {
+// GET /admin/events/create -> show create event form (main admin only)
+router.get('/events/create', requireMainAdmin, (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   res.render('admin-event-form', {
     event: null,
+    error: null,
     today,
     adminUsername: req.session.adminUsername,
+    adminRole: req.session.adminRole,
     isAdmin: true,
   });
 });
 
-// POST /admin/events/create -> create new event
-router.post('/events/create', requireAdmin, async (req, res, next) => {
+// POST /admin/events/create -> create new event (main admin only)
+router.post('/events/create', requireMainAdmin, async (req, res, next) => {
   try {
     const { eventName, eventDate, eventDescription, location, maxCapacity } = req.body;
 
@@ -150,9 +312,10 @@ router.post('/events/create', requireAdmin, async (req, res, next) => {
       const today = new Date().toISOString().split('T')[0];
       return res.render('admin-event-form', {
         event: req.body,
-        error: 'Event name and date are required',
+        error: 'ઇવેન્ટનું નામ અને તારીખ ફરજિયાત છે.',
         today,
         adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
         isAdmin: true,
       });
     }
@@ -175,11 +338,13 @@ router.post('/events/create', requireAdmin, async (req, res, next) => {
 // NOTE: /events/export is defined here, before GET /events/:id below,
 // so Express doesn't match "export" as an :id value.
 
-// GET /admin/dashboard/export -> export the users list (respects ?search=)
+// GET /admin/dashboard/export -> export the (filtered) users list, as
+// Excel by default or CSV with ?format=csv. Both admin roles can export.
 router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
   try {
-    const search = (req.query.search || '').trim();
-    const records = search ? await db.searchRecords(search) : await db.getAllRecords();
+    const filters = extractRecordFilters(req.query);
+    const search = filters.search.trim();
+    const records = await db.queryRecords(filters);
 
     const rows = records.map((r) => ({
       name: r.name,
@@ -189,7 +354,7 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
       email: r.email,
       gender: r.gender,
       dob: r.dob,
-      location: r.location,
+      location: r.location === 'અન્ય' ? (r.locationOther || r.location) : r.location,
       pincode: r.pincode,
       houseNumber: r.houseNumber,
       society: r.society,
@@ -206,35 +371,42 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
       id: r.id,
     }));
 
+    const columns = [
+      { header: 'Name', key: 'name', width: 22 },
+      { header: 'Age', key: 'age', width: 8 },
+      { header: 'Phone', key: 'phone', width: 15 },
+      { header: 'WhatsApp', key: 'whatsapp', width: 15 },
+      { header: 'Email', key: 'email', width: 26 },
+      { header: 'Gender', key: 'gender', width: 12 },
+      { header: 'DOB', key: 'dob', width: 14 },
+      { header: 'Area', key: 'location', width: 18 },
+      { header: 'Pincode', key: 'pincode', width: 12 },
+      { header: 'House No.', key: 'houseNumber', width: 14 },
+      { header: 'Society', key: 'society', width: 20 },
+      { header: 'Landmark', key: 'landmark', width: 20 },
+      { header: 'Address', key: 'address', width: 30 },
+      { header: 'Education', key: 'education', width: 20 },
+      { header: 'Interest', key: 'interest', width: 16 },
+      { header: 'Joined Via', key: 'joinMedium', width: 18 },
+      { header: 'Occupation', key: 'occupation', width: 20 },
+      { header: 'Notes', key: 'notes', width: 28 },
+      { header: 'Has Photo', key: 'hasPhoto', width: 12 },
+      { header: 'Registered On', key: 'createdAt', width: 22 },
+      { header: 'Profile Link', key: 'profileLink', width: 36, hyperlink: true },
+      { header: 'Record ID', key: 'id', width: 30 },
+    ];
+    const baseName = `users${search ? '-search-' + safeFilename(search) : ''}-${new Date().toISOString().slice(0, 10)}`;
+
+    if (req.query.format === 'csv') {
+      return sendCsvFile(res, { filename: `${baseName}.csv`, columns, rows });
+    }
+
     await sendExcelFile(res, {
-      filename: `users${search ? '-search-' + safeFilename(search) : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      filename: `${baseName}.xlsx`,
       sheetName: 'Users',
       title: 'Registered Users',
-      subtitle: `${records.length} user${records.length === 1 ? '' : 's'}${search ? ` matching "${search}"` : ''} \u2022 Generated ${formatDateTime(new Date())}`,
-      columns: [
-        { header: 'Name', key: 'name', width: 22 },
-        { header: 'Age', key: 'age', width: 8 },
-        { header: 'Phone', key: 'phone', width: 15 },
-        { header: 'WhatsApp', key: 'whatsapp', width: 15 },
-        { header: 'Email', key: 'email', width: 26 },
-        { header: 'Gender', key: 'gender', width: 12 },
-        { header: 'DOB', key: 'dob', width: 14 },
-        { header: 'Area', key: 'location', width: 18 },
-        { header: 'Pincode', key: 'pincode', width: 12 },
-        { header: 'House No.', key: 'houseNumber', width: 14 },
-        { header: 'Society', key: 'society', width: 20 },
-        { header: 'Landmark', key: 'landmark', width: 20 },
-        { header: 'Address', key: 'address', width: 30 },
-        { header: 'Education', key: 'education', width: 20 },
-        { header: 'Interest', key: 'interest', width: 16 },
-        { header: 'Joined Via', key: 'joinMedium', width: 18 },
-        { header: 'Occupation', key: 'occupation', width: 20 },
-        { header: 'Notes', key: 'notes', width: 28 },
-        { header: 'Has Photo', key: 'hasPhoto', width: 12 },
-        { header: 'Registered On', key: 'createdAt', width: 22 },
-        { header: 'Profile Link', key: 'profileLink', width: 36, hyperlink: true },
-        { header: 'Record ID', key: 'id', width: 30 },
-      ],
+      subtitle: `${records.length} user${records.length === 1 ? '' : 's'}${search ? ` matching "${search}"` : ''} • Generated ${formatDateTime(new Date())}`,
+      columns,
       rows,
     });
   } catch (err) {
@@ -242,8 +414,8 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
   }
 });
 
-// GET /admin/events/export -> export the events list
-router.get('/events/export', requireAdmin, async (req, res, next) => {
+// GET /admin/events/export -> export the all-events summary (main admin only)
+router.get('/events/export', requireMainAdmin, async (req, res, next) => {
   try {
     const events = await db.getAllEventsWithAttendanceCounts();
 
@@ -259,13 +431,7 @@ router.get('/events/export', requireAdmin, async (req, res, next) => {
       id: e.id,
     }));
 
-    await sendExcelFile(res, {
-      filename: `events-${new Date().toISOString().slice(0, 10)}.xlsx`,
-      sheetName: 'Events',
-      title: 'Events',
-      headerColor: 'FF0066CC',
-      subtitle: `${events.length} event${events.length === 1 ? '' : 's'} \u2022 Generated ${formatDateTime(new Date())}`,
-      columns: [
+    const columns = [
         { header: 'Event Name', key: 'name', width: 28 },
         { header: 'Date', key: 'date', width: 20 },
         { header: 'Status', key: 'status', width: 14 },
@@ -275,7 +441,20 @@ router.get('/events/export', requireAdmin, async (req, res, next) => {
         { header: 'Description', key: 'description', width: 34 },
         { header: 'Created On', key: 'createdAt', width: 22 },
         { header: 'Event ID', key: 'id', width: 30 },
-      ],
+    ];
+    const baseName = `events-${new Date().toISOString().slice(0, 10)}`;
+
+    if (req.query.format === 'csv') {
+      return sendCsvFile(res, { filename: `${baseName}.csv`, columns, rows });
+    }
+
+    await sendExcelFile(res, {
+      filename: `${baseName}.xlsx`,
+      sheetName: 'Events',
+      title: 'Events',
+      headerColor: 'FF0066CC',
+      subtitle: `${events.length} event${events.length === 1 ? '' : 's'} • Generated ${formatDateTime(new Date())}`,
+      columns,
       rows,
     });
   } catch (err) {
@@ -283,13 +462,15 @@ router.get('/events/export', requireAdmin, async (req, res, next) => {
   }
 });
 
-// GET /admin/events/:id/export -> export one event's attendance list (full user details)
-router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
+// GET /admin/events/:id/export -> export one event's (filtered) attendance
+// list, as Excel by default or CSV with ?format=csv.
+router.get('/events/:id/export', requireAdmin, requireEventAccess, async (req, res, next) => {
   try {
     const event = await db.getEventById(req.params.id);
-    if (!event) return res.status(404).render('404', { message: 'Event not found' });
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
 
-    const attendance = await db.getEventAttendance(req.params.id);
+    const attendanceFilters = extractAttendanceFilters(req.query);
+    const attendance = await db.queryEventAttendance(req.params.id, attendanceFilters);
 
     const rows = attendance.map((p) => ({
       name: p.name,
@@ -299,7 +480,7 @@ router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
       email: p.email,
       gender: p.gender,
       dob: p.dob,
-      location: p.location,
+      location: p.location === 'અન્ય' ? (p.location_other || p.location) : p.location,
       pincode: p.pincode,
       houseNumber: p.house_number,
       society: p.society,
@@ -318,38 +499,44 @@ router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
     }));
 
     const eventDateStr = formatEventDate(event.event_date);
+    const columns = [
+      { header: 'Name', key: 'name', width: 22 },
+      { header: 'Age', key: 'age', width: 8 },
+      { header: 'Phone', key: 'phone', width: 15 },
+      { header: 'WhatsApp', key: 'whatsapp', width: 15 },
+      { header: 'Email', key: 'email', width: 26 },
+      { header: 'Gender', key: 'gender', width: 12 },
+      { header: 'DOB', key: 'dob', width: 14 },
+      { header: 'Area', key: 'location', width: 18 },
+      { header: 'Pincode', key: 'pincode', width: 12 },
+      { header: 'House No.', key: 'houseNumber', width: 14 },
+      { header: 'Society', key: 'society', width: 20 },
+      { header: 'Landmark', key: 'landmark', width: 20 },
+      { header: 'Address', key: 'address', width: 30 },
+      { header: 'Education', key: 'education', width: 20 },
+      { header: 'Interest', key: 'interest', width: 16 },
+      { header: 'Joined Via', key: 'joinMedium', width: 18 },
+      { header: 'Occupation', key: 'occupation', width: 20 },
+      { header: 'Notes', key: 'recordNotes', width: 26 },
+      { header: 'Checked-In At', key: 'checkedInAt', width: 22 },
+      { header: 'Checked-In By', key: 'checkedInBy', width: 16 },
+      { header: 'Temperature', key: 'temperature', width: 13 },
+      { header: 'Attendance Notes', key: 'attendanceNotes', width: 26 },
+      { header: 'Record ID', key: 'recordId', width: 30 },
+    ];
+    const baseName = `${safeFilename(event.event_name)}-attendance-${new Date().toISOString().slice(0, 10)}`;
+
+    if (req.query.format === 'csv') {
+      return sendCsvFile(res, { filename: `${baseName}.csv`, columns, rows });
+    }
 
     await sendExcelFile(res, {
-      filename: `${safeFilename(event.event_name)}-attendance-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      filename: `${baseName}.xlsx`,
       sheetName: 'Attendance',
-      title: `${event.event_name} \u2014 Attendance`,
+      title: `${event.event_name} — Attendance`,
       headerColor: 'FF0066CC',
-      subtitle: `${eventDateStr}${event.location ? ' \u2022 ' + event.location : ''} \u2022 ${attendance.length} checked in \u2022 Generated ${formatDateTime(new Date())}`,
-      columns: [
-        { header: 'Name', key: 'name', width: 22 },
-        { header: 'Age', key: 'age', width: 8 },
-        { header: 'Phone', key: 'phone', width: 15 },
-        { header: 'WhatsApp', key: 'whatsapp', width: 15 },
-        { header: 'Email', key: 'email', width: 26 },
-        { header: 'Gender', key: 'gender', width: 12 },
-        { header: 'DOB', key: 'dob', width: 14 },
-        { header: 'Area', key: 'location', width: 18 },
-        { header: 'Pincode', key: 'pincode', width: 12 },
-        { header: 'House No.', key: 'houseNumber', width: 14 },
-        { header: 'Society', key: 'society', width: 20 },
-        { header: 'Landmark', key: 'landmark', width: 20 },
-        { header: 'Address', key: 'address', width: 30 },
-        { header: 'Education', key: 'education', width: 20 },
-        { header: 'Interest', key: 'interest', width: 16 },
-        { header: 'Joined Via', key: 'joinMedium', width: 18 },
-        { header: 'Occupation', key: 'occupation', width: 20 },
-        { header: 'Notes', key: 'recordNotes', width: 26 },
-        { header: 'Checked-In At', key: 'checkedInAt', width: 22 },
-        { header: 'Checked-In By', key: 'checkedInBy', width: 16 },
-        { header: 'Temperature', key: 'temperature', width: 13 },
-        { header: 'Attendance Notes', key: 'attendanceNotes', width: 26 },
-        { header: 'Record ID', key: 'recordId', width: 30 },
-      ],
+      subtitle: `${eventDateStr}${event.location ? ' • ' + event.location : ''} • ${attendance.length} checked in • Generated ${formatDateTime(new Date())}`,
+      columns,
       rows,
     });
   } catch (err) {
@@ -358,20 +545,160 @@ router.get('/events/:id/export', requireAdmin, async (req, res, next) => {
 });
 
 // GET /admin/events/:id -> view event details and attendance
-router.get('/events/:id', requireAdmin, async (req, res, next) => {
+router.get('/events/:id', requireAdmin, requireEventAccess, async (req, res, next) => {
   try {
     const event = await db.getEventById(req.params.id);
-    if (!event) return res.status(404).render('404', { message: 'Event not found' });
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
 
-    const attendance = await db.getEventAttendance(req.params.id);
+    const attendanceFilters = extractAttendanceFilters(req.query);
+    const attendance = await db.queryEventAttendance(req.params.id, attendanceFilters);
     const stats = await db.getEventStats(req.params.id);
 
     res.render('admin-event-detail', {
       event,
       attendance,
       stats,
+      attendanceFilters,
+      filterOptions: FILTER_OPTIONS,
       adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
       isAdmin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ==================== EVENT EMAIL ROUTES ====================
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// GET /admin/events/:id/email -> compose form for the manual event email
+router.get('/events/:id/email', requireAdmin, requireEventAccess, async (req, res, next) => {
+  try {
+    const event = await db.getEventById(req.params.id);
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+
+    res.render('admin-event-email', {
+      event,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+      result: null,
+      preview: null,
+      error: null,
+      formData: {},
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function buildEmailBodyHtml(message) {
+  return message
+    .trim()
+    .split(/\n{2,}/)
+    .map((para) => `<p style="margin:0 0 12px;">${para.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+// POST /admin/events/:id/email -> send the composed email.
+//
+// Two safety nets, added after a live filter pool got emailed during testing:
+//  1. "Test mode" (a single admin-entered address) always sends immediately
+//     and never touches the real recipient pool.
+//  2. A real send to "all registered users" / "not checked in" requires an
+//     explicit confirmation round-trip showing the recipient count first —
+//     the first submit only previews, the second (with confirmed=1) sends.
+router.post('/events/:id/email', requireAdmin, requireEventAccess, async (req, res, next) => {
+  try {
+    const event = await db.getEventById(req.params.id);
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+
+    const { subject, message, recipients, testEmail, confirmed } = req.body;
+    const renderBase = {
+      event,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    };
+
+    if (!subject || !subject.trim() || !message || !message.trim()) {
+      return res.render('admin-event-email', {
+        ...renderBase,
+        result: null,
+        preview: null,
+        error: 'વિષય અને સંદેશ બંને ભરવા ફરજિયાત છે.',
+        formData: req.body,
+      });
+    }
+
+    const bodyHtml = buildEmailBodyHtml(message);
+
+    // ---- Test mode: single address, sends immediately, no confirmation needed ----
+    if (testEmail && testEmail.trim()) {
+      const outcome = await notify.sendEventEmail({
+        to: testEmail.trim(),
+        name: null,
+        subject: `[ટેસ્ટ] ${subject.trim()}`,
+        bodyHtml,
+      });
+      return res.render('admin-event-email', {
+        ...renderBase,
+        error: null,
+        preview: null,
+        formData: {},
+        result: {
+          testMode: true,
+          to: testEmail.trim(),
+          sent: outcome.success ? 1 : 0,
+          failed: outcome.success || outcome.skipped ? 0 : 1,
+          skipped: outcome.skipped ? 1 : 0,
+        },
+      });
+    }
+
+    const targets = recipients === 'not-checked-in'
+      ? await db.getUsersNotCheckedIn(event.id)
+      : await db.getAllRecords();
+
+    // ---- Preview step: show the real recipient count and require a second click ----
+    if (confirmed !== '1') {
+      return res.render('admin-event-email', {
+        ...renderBase,
+        error: null,
+        result: null,
+        formData: req.body,
+        preview: { count: targets.length, recipients: recipients || 'all' },
+      });
+    }
+
+    let sent = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const record of targets) {
+      const outcome = await notify.sendEventEmail({
+        to: record.email,
+        name: record.name,
+        subject: subject.trim(),
+        bodyHtml,
+      });
+      if (outcome.success) sent++;
+      else if (outcome.skipped) skipped++;
+      else failed++;
+      // Small delay between sends to stay comfortably within Brevo's rate limits.
+      await sleep(150);
+    }
+
+    res.render('admin-event-email', {
+      ...renderBase,
+      error: null,
+      preview: null,
+      formData: {},
+      result: { sent, failed, skipped, total: targets.length },
     });
   } catch (err) {
     next(err);
@@ -381,7 +708,7 @@ router.get('/events/:id', requireAdmin, async (req, res, next) => {
 // ==================== CHECK-IN ROUTES ====================
 
 // GET /admin/checkin -> check-in page (scanner interface)
-router.get('/checkin', requireAdmin, async (req, res, next) => {
+router.get('/checkin', requireAdmin, requireEventAccess, async (req, res, next) => {
   try {
     // Get event (from query param or today's event)
     let event;
@@ -395,8 +722,9 @@ router.get('/checkin', requireAdmin, async (req, res, next) => {
     if (!event) {
       return res.render('admin-checkin', {
         event: null,
-        error: 'No event found. Please select an event.',
+        error: 'કોઈ ઇવેન્ટ મળ્યો નહીં. કૃપા કરીને ઇવેન્ટ પસંદ કરો.',
         adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
         isAdmin: true,
       });
     }
@@ -409,6 +737,7 @@ router.get('/checkin', requireAdmin, async (req, res, next) => {
       attendance,
       stats,
       adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
       isAdmin: true,
     });
   } catch (err) {
@@ -418,7 +747,7 @@ router.get('/checkin', requireAdmin, async (req, res, next) => {
 
 // API endpoint: POST /admin/api/checkin
 // Called when admin scans a QR or enters a user ID
-router.post('/api/checkin', requireAdmin, async (req, res, next) => {
+router.post('/api/checkin', requireAdmin, requireEventAccess, async (req, res, next) => {
   try {
     const { recordId, eventId } = req.body;
 
@@ -480,7 +809,7 @@ router.post('/api/checkin', requireAdmin, async (req, res, next) => {
 
 // API endpoint: POST /admin/api/checkout
 // Remove a check-in
-router.post('/api/checkout', requireAdmin, async (req, res, next) => {
+router.post('/api/checkout', requireAdmin, requireEventAccess, async (req, res, next) => {
   try {
     const { recordId, eventId } = req.body;
 

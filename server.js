@@ -6,7 +6,10 @@ const config = require('./config');
 const db = require('./db');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
-const { formatEventDate, formatShortDate, formatDateTime, formatTime } = require('./utils/datetime');
+const {
+  formatEventDate, formatShortDate, formatDateTime, formatTime,
+  formatEventDateGu, formatShortDateGu, formatDateTimeGu, formatTimeGu,
+} = require('./utils/datetime');
 
 const app = express();
 app.get('/healthz', function(req, res) {
@@ -23,6 +26,10 @@ app.locals.formatEventDate = formatEventDate;
 app.locals.formatShortDate = formatShortDate;
 app.locals.formatDateTime = formatDateTime;
 app.locals.formatTime = formatTime;
+app.locals.formatEventDateGu = formatEventDateGu;
+app.locals.formatShortDateGu = formatShortDateGu;
+app.locals.formatDateTimeGu = formatDateTimeGu;
+app.locals.formatTimeGu = formatTimeGu;
 
 // Body parsing
 app.use(express.urlencoded({ extended: true }));

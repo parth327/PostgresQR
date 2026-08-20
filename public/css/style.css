@@ -194,6 +194,18 @@ body {
 
 .form-hero { text-align: center; margin-bottom: 8px; }
 
+.hero-portrait {
+  display: block;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-md);
+  margin: 0 auto 16px;
+  animation: badgeIn 0.6s ease both;
+}
+
 .hero-badge {
   display: inline-block;
   background: var(--grad-soft);
@@ -816,3 +828,98 @@ body.page-admin-login .subtitle {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d8d2f5; border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: #c4b5fd; }
+
+/* ==================== Event admin pages (shared layout) ==================== */
+
+.event-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.event-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.event-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.event-card h3 { margin: 0 0 8px; font-size: 1.15rem; color: var(--text); }
+.event-date { color: var(--primary); font-weight: 700; font-size: 1rem; margin: 4px 0; }
+.event-meta { margin: 4px 0; color: var(--text); }
+.event-desc { margin: 8px 0 0; color: var(--text-light); font-size: 0.92rem; }
+.event-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.status-upcoming { background: #fef3c7; color: #92400e; }
+.status-ongoing { background: #d1fae5; color: #065f46; }
+.status-completed { background: #e5e7eb; color: #374151; }
+
+.event-hero {
+  background: var(--grad-primary);
+  color: #fff;
+  padding: 28px 28px;
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+.event-hero h1 { margin: 0 0 6px; font-size: 1.6rem; color: #fff; -webkit-text-fill-color: #fff; background: none; }
+.event-hero p { margin: 4px 0; opacity: 0.92; }
+.event-hero .header-stats { display: flex; gap: 28px; margin-top: 14px; flex-wrap: wrap; }
+.event-hero .stat-item { display: flex; flex-direction: column; }
+.event-hero .stat-value { font-size: 1.7rem; font-weight: 800; }
+.event-hero .stat-label { font-size: 0.85rem; opacity: 0.85; }
+
+.info-card {
+  background: var(--card-bg);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.info-card p { margin: 8px 0; }
+
+.scanner-card {
+  background: var(--card-bg);
+  border: 2px solid var(--primary-light);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.scanner-card h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; }
+.scanner-card h3 { color: var(--text); font-size: 1rem; margin: 18px 0 10px; }
+#video { width: 100%; max-width: 480px; height: 360px; border-radius: var(--radius-sm); margin-bottom: 12px; background: #000; display: block; }
+.camera-controls { display: flex; gap: 10px; margin-bottom: 16px; }
+.manual-checkin { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.manual-checkin input { flex: 1; min-width: 200px; }
+
+.attendance-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin: 16px 0 24px; }
+.attendee-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.attendee-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.attendee-card h4 { margin: 0 0 6px; color: var(--text); font-size: 1.05rem; }
+.attendee-card p { margin: 4px 0; font-size: 0.9rem; color: var(--text-light); }
+.attendee-card .checkin-time { color: var(--success); font-weight: 700; margin-top: 8px; }
+.attendee-card .checkin-by { font-size: 0.78rem; color: var(--text-light); }
+
+.msg-banner { padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-weight: 600; animation: fadeInUp 0.3s ease both; }
+.msg-banner.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.msg-banner.error { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+
+/* Compact create/edit form card, reusing the site's field/label styles */
+.admin-form-card { max-width: 640px; margin: 0 auto; }
+.admin-form-card .help-text { font-size: 0.82rem; color: var(--text-light); margin: 4px 0 0; }

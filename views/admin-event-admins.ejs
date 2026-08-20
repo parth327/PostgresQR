@@ -1,0 +1,95 @@
+<% var pageTitle = 'ઇવેન્ટ એડમિન મેનેજ કરો'; %>
+<%- include('partials/header') %>
+
+<div class="wide-container fade-in-up">
+  <h1>ઇવેન્ટ એડમિન મેનેજ કરો</h1>
+  <p class="subtitle">દરેક ઇવેન્ટ એડમિન ફક્ત એક જ ઇવેન્ટ માટે યુઝર્સને ચેક-ઇન કરી શકે છે અને તેની હાજરી જોઈ/એક્સપોર્ટ કરી શકે છે.</p>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error shake"><%= error %></div>
+  <% } %>
+
+  <div class="card" style="max-width:560px;">
+    <h3 class="section-title" style="margin-top:0;"><span class="section-num">+</span> નવો ઇવેન્ટ એડમિન બનાવો</h3>
+    <form method="POST" action="/admin/event-admins">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="new-username">વપરાશકર્તા નામ <span class="req">*</span></label>
+          <input type="text" id="new-username" name="username" required placeholder="દા.ત. narodabhag-admin" />
+        </div>
+        <div class="field full">
+          <label for="new-eventId">ઇવેન્ટ <span class="req">*</span></label>
+          <select id="new-eventId" name="eventId" required>
+            <option value="" disabled selected>ઇવેન્ટ પસંદ કરો</option>
+            <% events.forEach(function(ev) { %>
+              <option value="<%= ev.id %>"><%= ev.event_name %> (<%= formatEventDateGu(ev.event_date) %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="new-password">પાસવર્ડ <span class="req">*</span></label>
+          <input type="password" id="new-password" name="password" required placeholder="••••••••" />
+        </div>
+      </div>
+      <div class="actions-row">
+        <button type="submit" class="btn btn-glow">✓ બનાવો</button>
+      </div>
+    </form>
+  </div>
+
+  <h3 class="section-title" style="margin-top:32px;"><span class="section-num">#</span> હાલના ઇવેન્ટ એડમિન</h3>
+
+  <% if (eventAdmins.length === 0) { %>
+    <div class="empty-state card">
+      <p>હજુ સુધી કોઈ ઇવેન્ટ એડમિન બનાવવામાં આવ્યો નથી.</p>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>વપરાશકર્તા નામ</th>
+            <th>સોંપાયેલ ઇવેન્ટ</th>
+            <th>બનાવ્યાની તારીખ</th>
+            <th>ઇવેન્ટ બદલો</th>
+            <th>પાસવર્ડ બદલો</th>
+            <th>ડિલીટ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% eventAdmins.forEach(function(ea) { %>
+            <tr>
+              <td data-label="વપરાશકર્તા નામ"><strong><%= ea.username %></strong></td>
+              <td data-label="સોંપાયેલ ઇવેન્ટ"><%= ea.event_name || '—' %></td>
+              <td data-label="બનાવ્યાની તારીખ"><%= formatShortDateGu(ea.created_at) %></td>
+              <td data-label="ઇવેન્ટ બદલો">
+                <form action="/admin/event-admins/<%= ea.id %>/event" method="POST" style="display:flex; gap:6px;">
+                  <select name="eventId" style="min-width:140px;">
+                    <% events.forEach(function(ev) { %>
+                      <option value="<%= ev.id %>" <%= ev.id === ea.event_id ? 'selected' : '' %>><%= ev.event_name %></option>
+                    <% }); %>
+                  </select>
+                  <button type="submit" class="btn btn-secondary btn-sm">બદલો</button>
+                </form>
+              </td>
+              <td data-label="પાસવર્ડ બદલો">
+                <form action="/admin/event-admins/<%= ea.id %>/password" method="POST" style="display:flex; gap:6px;">
+                  <input type="password" name="password" placeholder="નવો પાસવર્ડ" style="min-width:120px;" />
+                  <button type="submit" class="btn btn-secondary btn-sm">સેટ કરો</button>
+                </form>
+              </td>
+              <td data-label="ડિલીટ">
+                <form action="/admin/event-admins/<%= ea.id %>/delete" method="POST"
+                      onsubmit="return confirm('આ ઇવેન્ટ એડમિન ડિલીટ કરવો છે?');">
+                  <button type="submit" class="btn btn-danger btn-sm">ડિલીટ</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

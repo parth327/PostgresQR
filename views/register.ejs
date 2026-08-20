@@ -5,7 +5,8 @@
 <div class="container">
   <div class="card fade-in-up">
     <div class="form-hero">
-      <h2 class="hero-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ 🕉️</h2>
+      <img src="/css/bharat-mata-bg.jpg" alt="Bharat Mata" class="hero-portrait" />
+      <h2 class="hero-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</h2>
       <h1>યુવા સંગમ ૨૦૨૬</h1>
       <p class="subtitle">નમસ્તે મિત્રો, યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
     </div>
@@ -50,7 +51,7 @@
           </div>
 
           <div class="field">
-            <label for="f-whatsapp">💬 વોટ્સએપ નંબર</label>
+            <label for="f-whatsapp">💬 વોટ્સએપ નંબર (જો હોય તો)</label>
             <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" />
           </div>
 
@@ -69,10 +70,15 @@
             <label for="f-location">📍 એરિયા <span class="req">*</span></label>
             <select id="f-location" name="location" required>
               <option value="" disabled <%= !formData.location ? 'selected' : '' %>>પસંદ કરો</option>
-              <% ['કૃષ્ણા નગર','કુબેરનગર','સૈજપુર','સરદારનગર','નરોડા','હરિદર્શન'].forEach(function(opt) { %>
+              <% ['કૃષ્ણા નગર','કુબેરનગર','સૈજપુર','સરદારનગર','નરોડા','હરિદર્શન','અન્ય'].forEach(function(opt) { %>
                 <option value="<%= opt %>" <%= formData.location === opt ? 'selected' : '' %>><%= opt %></option>
               <% }); %>
             </select>
+          </div>
+
+          <div class="field full" id="locationOtherWrap" style="display:none;">
+            <label for="f-locationOther">📍 અન્ય એરિયા <span class="req">*</span></label>
+            <input type="text" id="f-locationOther" name="locationOther" value="<%= formData.locationOther || '' %>" placeholder="કૃપા કરીને તમારો એરિયા જણાવો" />
           </div>
 
           <div class="field">
@@ -174,18 +180,30 @@
     var otherWrap = document.getElementById('joinMediumOtherWrap');
     var otherInput = document.getElementById('joinMediumOther');
 
-    function syncOther() {
-      var isOther = joinMedium.value === 'અન્ય';
-      otherWrap.style.display = isOther ? 'block' : 'none';
+    var location = document.getElementById('f-location');
+    var locationOtherWrap = document.getElementById('locationOtherWrap');
+    var locationOtherInput = document.getElementById('f-locationOther');
+
+    function syncConditional(select, wrap, input) {
+      var isOther = select.value === 'અન્ય';
+      wrap.style.display = isOther ? 'block' : 'none';
       if (isOther) {
-        otherInput.setAttribute('required', 'required');
-        requestAnimationFrame(function () { otherWrap.classList.add('field-reveal'); });
+        input.setAttribute('required', 'required');
+        requestAnimationFrame(function () { wrap.classList.add('field-reveal'); });
       } else {
-        otherInput.removeAttribute('required');
-        otherInput.value = '';
-        otherWrap.classList.remove('field-reveal');
+        input.removeAttribute('required');
+        input.value = '';
+        wrap.classList.remove('field-reveal');
       }
       updateProgress();
+    }
+
+    function syncOther() {
+      syncConditional(joinMedium, otherWrap, otherInput);
+    }
+
+    function syncLocationOther() {
+      syncConditional(location, locationOtherWrap, locationOtherInput);
     }
 
     // Required, currently-visible fields we track for the progress bar / validity
@@ -239,7 +257,9 @@
     Array.prototype.slice.call(form.querySelectorAll('input, select, textarea')).forEach(attachHint);
 
     joinMedium.addEventListener('change', syncOther);
+    location.addEventListener('change', syncLocationOther);
     syncOther();
+    syncLocationOther();
     updateProgress();
 
     form.addEventListener('submit', function (e) {

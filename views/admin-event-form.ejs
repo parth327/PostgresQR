@@ -1,184 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Create Event - Admin</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .form-container {
-      max-width: 600px;
-      margin: 2rem auto;
-      padding: 2rem;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #f9f9f9;
-    }
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: bold;
-      color: #333;
-    }
-    .required {
-      color: #dc3545;
-    }
-    input[type="text"],
-    input[type="date"],
-    input[type="number"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    input:focus,
-    textarea:focus,
-    select:focus {
-      outline: none;
-      border-color: #6d28d9;
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-    }
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      text-decoration: none;
-      display: inline-block;
-      margin-right: 0.5rem;
-    }
-    .btn-primary {
-      background: #6d28d9;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #5b21b6;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
-    .error-message {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 1rem;
-      border-radius: 4px;
-      margin-bottom: 1.5rem;
-      border: 1px solid #f5c6cb;
-    }
-    .help-text {
-      font-size: 0.85rem;
-      color: #666;
-      margin-top: 0.25rem;
-    }
-  
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:translateY(0);} }
-    a.btn, button.btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger { transition: transform .16s ease, box-shadow .16s ease, background .2s ease !important; }
-    a.btn:hover, button.btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(109,40,217,0.22); }
-    .event-card, .stat-box, .attendee-card, .checkin-container, .events-container { animation: fadeInUp .5s cubic-bezier(.22,1,.36,1) both; }
-  </style>
-</head>
-<body>
-  <div class="topbar">
-    <a href="/register" class="brand"><span class="brand-dot"></span>યુવા સંગમ ૨૦૨૬</a>
-    <nav>
-      <a href="/admin/dashboard">Dashboard</a>
-      <a href="/admin/events">Events</a>
-      <form action="/admin/logout" method="POST" style="display:inline">
-        <button type="submit">Logout</button>
-      </form>
-    </nav>
-  </div>
-  <div class="form-container">
-    <h1>Create New Event</h1>
-    
-  
+<% var pageTitle = 'નવો ઇવેન્ટ બનાવો - એડમિન'; %>
+<%- include('partials/header') %>
+
+<div class="container fade-in-up">
+  <div class="card admin-form-card">
+    <h1>નવો ઇવેન્ટ બનાવો</h1>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-error shake"><%= error %></div>
+    <% } %>
+
     <form method="POST" action="/admin/events/create">
-      <div class="form-group">
-        <label for="eventName">
-          Event Name <span class="required">*</span>
-        </label>
-        <input 
-          type="text" 
-          id="eventName" 
-          name="eventName" 
-          value="<%= event?.name || '' %>"
-          placeholder="e.g., Annual Conference 2026"
+      <div class="field">
+        <label for="eventName">ઇવેન્ટનું નામ <span class="req">*</span></label>
+        <input
+          type="text"
+          id="eventName"
+          name="eventName"
+          value="<%= event && event.eventName ? event.eventName : '' %>"
+          placeholder="દા.ત. વાર્ષિક સંમેલન ૨૦૨૬"
           required
         >
-        <p class="help-text">Give your event a memorable name</p>
+        <p class="help-text">ઇવેન્ટને યાદગાર નામ આપો</p>
       </div>
 
-      <div class="form-group">
-        <label for="eventDate">
-          Event Date <span class="required">*</span>
-        </label>
-        <input 
-          type="date" 
-          id="eventDate" 
-          name="eventDate" 
-          value="<%= event?.date || today %>"
+      <div class="field">
+        <label for="eventDate">ઇવેન્ટની તારીખ <span class="req">*</span></label>
+        <input
+          type="date"
+          id="eventDate"
+          name="eventDate"
+          value="<%= (event && event.eventDate) || today %>"
           required
         >
-        <p class="help-text">Select the date when the event will take place</p>
+        <p class="help-text">ઇવેન્ટ ક્યારે યોજાશે તે તારીખ પસંદ કરો</p>
       </div>
 
-      <div class="form-group">
-        <label for="location">Location</label>
-        <input 
-          type="text" 
-          id="location" 
-          name="location" 
-          value="<%= event?.location || '' %>"
-          placeholder="e.g., Convention Center, New Delhi"
+      <div class="field">
+        <label for="location">સ્થળ</label>
+        <input
+          type="text"
+          id="location"
+          name="location"
+          value="<%= event && event.location ? event.location : '' %>"
+          placeholder="દા.ત. કન્વેન્શન સેન્ટર, નરોડા"
         >
-        <p class="help-text">Where will the event be held?</p>
+        <p class="help-text">ઇવેન્ટ ક્યાં યોજાશે?</p>
       </div>
 
-      <div class="form-group">
-        <label for="maxCapacity">Max Capacity</label>
-        <input 
-          type="number" 
-          id="maxCapacity" 
-          name="maxCapacity" 
-          value="<%= event?.maxCapacity || '' %>"
-          placeholder="e.g., 500"
+      <div class="field">
+        <label for="maxCapacity">મહત્તમ ક્ષમતા</label>
+        <input
+          type="number"
+          id="maxCapacity"
+          name="maxCapacity"
+          value="<%= event && event.maxCapacity ? event.maxCapacity : '' %>"
+          placeholder="દા.ત. 500"
           min="1"
         >
-        <p class="help-text">Maximum number of attendees (optional)</p>
+        <p class="help-text">મહત્તમ સહભાગીઓની સંખ્યા (વૈકલ્પિક)</p>
       </div>
 
-      <div class="form-group">
-        <label for="eventDescription">Description</label>
-        <textarea 
-          id="eventDescription" 
+      <div class="field">
+        <label for="eventDescription">વર્ણન</label>
+        <textarea
+          id="eventDescription"
           name="eventDescription"
-          placeholder="Add any additional details about the event..."
-        ><%= event?.description || '' %></textarea>
-        <p class="help-text">Optional: Add details, agenda, or notes</p>
+          placeholder="ઇવેન્ટ વિશે વધારાની વિગતો ઉમેરો..."
+        ><%= event && event.eventDescription ? event.eventDescription : '' %></textarea>
+        <p class="help-text">વૈકલ્પિક: વિગતો, કાર્યક્રમ અથવા નોંધ ઉમેરો</p>
       </div>
 
-      <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-        <button type="submit" class="btn btn-primary">✓ Create Event</button>
-        <a href="/admin/events" class="btn btn-secondary">Cancel</a>
+      <div class="actions-row">
+        <button type="submit" class="btn btn-glow">✓ ઇવેન્ટ બનાવો</button>
+        <a href="/admin/events" class="btn btn-secondary">રદ કરો</a>
       </div>
     </form>
   </div>
-</body>
-</html>
+</div>
+
+<%- include('partials/footer') %>

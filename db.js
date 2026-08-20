@@ -45,6 +45,7 @@ async function init() {
     await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS join_medium TEXT;`);
     await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS join_medium_other TEXT;`);
     await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS age INTEGER;`);
+    await pool.query(`ALTER TABLE records ADD COLUMN IF NOT EXISTS location_other TEXT;`);
 
     // Events table (new)
     await pool.query(`
@@ -91,6 +92,19 @@ async function init() {
       CREATE INDEX IF NOT EXISTS idx_attendance_checkin_time ON event_attendance(checked_in_at);
     `);
 
+    // Event Admins table (new) — scoped admin accounts, one event each,
+    // created/managed only by the main (env-based) admin.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_admins (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
     console.log('Database ready (all tables checked/created).');
   } catch (err) {
     console.error('Database init error:', err);
@@ -111,6 +125,7 @@ function rowToRecord(row) {
     whatsapp: row.whatsapp || '',
     email: row.email || '',
     location: row.location,
+    locationOther: row.location_other || '',
     houseNumber: row.house_number || '',
     society: row.society || '',
     landmark: row.landmark || '',
@@ -154,8 +169,8 @@ async function getQr(id) {
 async function addRecord(record) {
   await pool.query(
     `INSERT INTO records
-      (id, name, dob, gender, phone, whatsapp, email, location, house_number, society, landmark, address, education, occupation, interest, join_medium, join_medium_other, age, notes, photo_data, photo_mime, qr_data, created_at, pincode)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
+      (id, name, dob, gender, phone, whatsapp, email, location, location_other, house_number, society, landmark, address, education, occupation, interest, join_medium, join_medium_other, age, notes, photo_data, photo_mime, qr_data, created_at, pincode)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
     [
       record.id,
       record.name,
@@ -165,6 +180,7 @@ async function addRecord(record) {
       record.whatsapp || null,
       record.email || null,
       record.location,
+      record.locationOther || null,
       record.houseNumber || null,
       record.society || null,
       record.landmark || null,
@@ -204,6 +220,54 @@ async function searchRecords(term) {
         OR whatsapp ILIKE $1 OR society ILIKE $1 OR landmark ILIKE $1 OR interest ILIKE $1 OR join_medium ILIKE $1
      ORDER BY created_at DESC`,
     [like]
+  );
+  return rows.map(rowToRecord);
+}
+
+// Combines the free-text search box with the advanced filter panel
+// (area/education/interest/joinMedium/gender/age range/registration date
+// range) on the admin dashboard, building a single parameterized WHERE
+// clause. Passing no filters returns every record, same as getAllRecords().
+async function queryRecords(filters = {}) {
+  const { search, location, education, interest, joinMedium, gender, ageMin, ageMax, dateFrom, dateTo } = filters;
+  const clauses = [];
+  const params = [];
+
+  function add(clause, value) {
+    params.push(value);
+    clauses.push(clause.replace('?', `$${params.length}`));
+  }
+
+  if (search && search.trim()) {
+    const like = `%${search.trim()}%`;
+    const cols = ['name', 'location', 'education', 'phone', 'email', 'whatsapp', 'society', 'landmark', 'interest', 'join_medium'];
+    params.push(like);
+    const p = `$${params.length}`;
+    clauses.push(`(${cols.map((c) => `${c} ILIKE ${p}`).join(' OR ')})`);
+  }
+  if (location && location.trim()) add('location = ?', location.trim());
+  if (education && education.trim()) add('education ILIKE ?', `%${education.trim()}%`);
+  if (interest && interest.trim()) add('interest = ?', interest.trim());
+  if (joinMedium && joinMedium.trim()) add('join_medium = ?', joinMedium.trim());
+  if (gender && gender.trim()) add('gender = ?', gender.trim());
+  if (ageMin) add('age >= ?', parseInt(ageMin, 10));
+  if (ageMax) add('age <= ?', parseInt(ageMax, 10));
+  if (dateFrom) add('created_at >= ?', new Date(`${dateFrom}T00:00:00`));
+  if (dateTo) add('created_at <= ?', new Date(`${dateTo}T23:59:59.999`));
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const { rows } = await pool.query(`SELECT * FROM records ${where} ORDER BY created_at DESC`, params);
+  return rows.map(rowToRecord);
+}
+
+// Registered users who have NOT checked in to a given event yet — used as a
+// recipient filter for the manual "send event email" feature.
+async function getUsersNotCheckedIn(eventId) {
+  const { rows } = await pool.query(
+    `SELECT r.* FROM records r
+     WHERE NOT EXISTS (SELECT 1 FROM event_attendance ea WHERE ea.event_id = $1 AND ea.record_id = r.id)
+     ORDER BY r.created_at DESC`,
+    [eventId]
   );
   return rows.map(rowToRecord);
 }
@@ -312,6 +376,7 @@ async function getEventAttendance(eventId) {
        r.whatsapp,
        r.email,
        r.location,
+       r.location_other,
        r.house_number,
        r.society,
        r.landmark,
@@ -329,6 +394,63 @@ async function getEventAttendance(eventId) {
      WHERE ea.event_id = $1
      ORDER BY ea.checked_in_at DESC`,
     [eventId]
+  );
+  return rows;
+}
+
+// Same shape as getEventAttendance, plus an optional filter panel (area,
+// education, gender, checked-in date/time range, checked-in-by admin) for
+// the event detail page's attendance table.
+async function queryEventAttendance(eventId, filters = {}) {
+  const { location, education, gender, checkedInFrom, checkedInTo, checkedInBy } = filters;
+  const clauses = ['ea.event_id = $1'];
+  const params = [eventId];
+
+  function add(clause, value) {
+    params.push(value);
+    clauses.push(clause.replace('?', `$${params.length}`));
+  }
+
+  if (location && location.trim()) add('r.location = ?', location.trim());
+  if (education && education.trim()) add('r.education ILIKE ?', `%${education.trim()}%`);
+  if (gender && gender.trim()) add('r.gender = ?', gender.trim());
+  if (checkedInFrom) add('ea.checked_in_at >= ?', new Date(`${checkedInFrom}T00:00:00`));
+  if (checkedInTo) add('ea.checked_in_at <= ?', new Date(`${checkedInTo}T23:59:59.999`));
+  if (checkedInBy && checkedInBy.trim()) add('ea.checked_in_by ILIKE ?', `%${checkedInBy.trim()}%`);
+
+  const { rows } = await pool.query(
+    `SELECT
+       ea.id,
+       ea.checked_in_at,
+       ea.checked_in_by,
+       ea.temperature,
+       ea.notes AS attendance_notes,
+       r.id as record_id,
+       r.name,
+       r.dob,
+       r.gender,
+       r.phone,
+       r.whatsapp,
+       r.email,
+       r.location,
+       r.location_other,
+       r.house_number,
+       r.society,
+       r.landmark,
+       r.address,
+       r.education,
+       r.occupation,
+       r.interest,
+       r.join_medium,
+       r.join_medium_other,
+       r.age,
+       r.pincode,
+       r.notes AS record_notes
+     FROM event_attendance ea
+     JOIN records r ON ea.record_id = r.id
+     WHERE ${clauses.join(' AND ')}
+     ORDER BY ea.checked_in_at DESC`,
+    params
   );
   return rows;
 }
@@ -390,6 +512,45 @@ async function getEventStats(eventId) {
   return rows[0];
 }
 
+// ==================== EVENT ADMIN FUNCTIONS (NEW) ====================
+
+async function createEventAdmin({ username, passwordHash, eventId }) {
+  const id = crypto.randomUUID();
+  await pool.query(
+    `INSERT INTO event_admins (id, username, password_hash, event_id) VALUES ($1, $2, $3, $4)`,
+    [id, username, passwordHash, eventId]
+  );
+  return id;
+}
+
+async function getEventAdminByUsername(username) {
+  const { rows } = await pool.query('SELECT * FROM event_admins WHERE username = $1', [username]);
+  return rows[0] || null;
+}
+
+async function getAllEventAdmins() {
+  const { rows } = await pool.query(
+    `SELECT ea.*, e.event_name, e.event_date
+     FROM event_admins ea
+     LEFT JOIN events e ON e.id = ea.event_id
+     ORDER BY ea.created_at DESC`
+  );
+  return rows;
+}
+
+async function updateEventAdminPassword(id, passwordHash) {
+  await pool.query(`UPDATE event_admins SET password_hash = $1, updated_at = NOW() WHERE id = $2`, [passwordHash, id]);
+}
+
+async function updateEventAdminEvent(id, eventId) {
+  await pool.query(`UPDATE event_admins SET event_id = $1, updated_at = NOW() WHERE id = $2`, [eventId, id]);
+}
+
+async function deleteEventAdmin(id) {
+  const result = await pool.query('DELETE FROM event_admins WHERE id = $1', [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = {
   init,
   // Record functions
@@ -401,6 +562,8 @@ module.exports = {
   deleteRecord,
   countRecords,
   searchRecords,
+  queryRecords,
+  getUsersNotCheckedIn,
   // Event functions
   createEvent,
   getAllEvents,
@@ -412,9 +575,17 @@ module.exports = {
   // Attendance functions
   checkInUser,
   getEventAttendance,
+  queryEventAttendance,
   getAttendanceCount,
   isUserCheckedIn,
   getAttendanceByUser,
   removeCheckIn,
   getEventStats,
+  // Event admin functions
+  createEventAdmin,
+  getEventAdminByUsername,
+  getAllEventAdmins,
+  updateEventAdminPassword,
+  updateEventAdminEvent,
+  deleteEventAdmin,
 };

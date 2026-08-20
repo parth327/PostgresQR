@@ -11,14 +11,14 @@
       <% } %>
       <div>
         <h2><%= record.name %></h2>
-        <p><%= record.occupation || 'Registered User' %></p>
+        <p><%= record.occupation || 'નોંધાયેલ વપરાશકર્તા' %></p>
       </div>
     </div>
 
     <div class="detail-row"><span class="label">ઉંમર</span><span class="value"><%= record.age || '-' %></span></div>
     <div class="detail-row"><span class="label">ફોન નંબર</span><span class="value"><%= record.phone || '-' %></span></div>
     <div class="detail-row"><span class="label">વોટ્સએપ નંબર</span><span class="value"><%= record.whatsapp || '-' %></span></div>
-    <div class="detail-row"><span class="label">એરિયા</span><span class="value"><%= record.location || '-' %></span></div>
+    <div class="detail-row"><span class="label">એરિયા</span><span class="value"><%= (record.location === 'અન્ય' ? (record.locationOther || record.location) : record.location) || '-' %></span></div>
     <div class="detail-row"><span class="label">પિનકોડ</span><span class="value"><%= record.pincode || '-' %></span></div>
     <div class="detail-row"><span class="label">ઘર નંબર</span><span class="value"><%= record.houseNumber || '-' %></span></div>
     <div class="detail-row"><span class="label">સોસાયટી</span><span class="value"><%= record.society || '-' %></span></div>
@@ -27,38 +27,38 @@
     <div class="detail-row"><span class="label">રુચિનો વિષય</span><span class="value"><%= record.interest || '-' %></span></div>
     <div class="detail-row"><span class="label">કયા માધ્યમથી જોડાયા</span><span class="value"><%= record.joinMedium === 'અન્ય' ? (record.joinMediumOther || record.joinMedium) : (record.joinMedium || '-') %></span></div>
     <% if (record.email) { %>
-    <div class="detail-row"><span class="label">Email</span><span class="value"><%= record.email %></span></div>
+    <div class="detail-row"><span class="label">ઈમેલ</span><span class="value"><%= record.email %></span></div>
     <% } %>
     <% if (record.dob) { %>
-    <div class="detail-row"><span class="label">Date of Birth</span><span class="value"><%= record.dob %></span></div>
+    <div class="detail-row"><span class="label">જન્મ તારીખ</span><span class="value"><%= record.dob %></span></div>
     <% } %>
     <% if (record.gender) { %>
-    <div class="detail-row"><span class="label">Gender</span><span class="value"><%= record.gender %></span></div>
+    <div class="detail-row"><span class="label">લિંગ</span><span class="value"><%= record.gender %></span></div>
     <% } %>
     <% if (record.address) { %>
-    <div class="detail-row"><span class="label">Address</span><span class="value"><%= record.address %></span></div>
+    <div class="detail-row"><span class="label">સરનામું</span><span class="value"><%= record.address %></span></div>
     <% } %>
 <% if (record.notes) { %>
-      <div class="detail-row"><span class="label">Notes</span><span class="value"><%= record.notes %></span></div>
+      <div class="detail-row"><span class="label">નોંધ</span><span class="value"><%= record.notes %></span></div>
     <% } %>
-    <div class="detail-row"><span class="label">Registered On</span><span class="value"><%= formatDateTime(record.createdAt) %></span></div>
+    <div class="detail-row"><span class="label">નોંધણી તારીખ</span><span class="value"><%= formatDateTimeGu(record.createdAt) %></span></div>
 
 <% if (isAdmin && attendanceHistory && attendanceHistory.length > 0) { %>
-  <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #ddd;">
-    <h3>📊 Attendance History</h3>
+  <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+    <h3>📊 હાજરી ઇતિહાસ</h3>
     <ul style="list-style: none; padding: 0;">
       <% attendanceHistory.forEach(event => { %>
         <li style="
           padding: 0.75rem;
           margin-bottom: 0.5rem;
-          background: #f9f9f9;
-          border-left: 4px solid #0066cc;
-          border-radius: 4px;
+          background: var(--primary-light);
+          border-left: 4px solid var(--primary);
+          border-radius: var(--radius-sm);
         ">
           <strong><%= event.event_name %></strong><br>
-          📅 <%= formatShortDate(event.event_date) %><br>
+          📅 <%= formatShortDateGu(event.event_date) %><br>
           📍 <%= event.location %><br>
-          <small style="color: #666;">✓ Checked in: <%= formatDateTime(event.checked_in_at) %></small>
+          <small style="color: var(--text-light);">✓ ચેક-ઇન: <%= formatDateTimeGu(event.checked_in_at) %></small>
         </li>
       <% }); %>
     </ul>
@@ -68,7 +68,7 @@
     <% if (isAdmin) { %>
       <div class="actions-row">
         <img src="<%= qrUrl %>" class="mini-qr" alt="qr" style="width:60px;height:60px;" />
-        <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+        <a href="/admin/dashboard" class="btn btn-secondary">ડેશબોર્ડ પર પાછા જાઓ</a>
       </div>
     <% } %>
   </div>

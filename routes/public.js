@@ -43,7 +43,7 @@ router.post('/register', (req, res) => {
 
     try {
       const {
-        name, dob, gender, phone, whatsapp, email, location, address,
+        name, dob, gender, phone, whatsapp, email, location, locationOther, address,
         houseNumber, society, landmark, education, occupation, notes, pincode,
         interest, joinMedium, joinMediumOther, age,
       } = req.body;
@@ -55,6 +55,7 @@ router.post('/register', (req, res) => {
       if (!email || !email.trim()) missing.push('ઈમેલ');
       else if (!emailRegex.test(email.trim())) missing.push('યોગ્ય ઈમેલ સરનામું');
       if (!location || !location.trim()) missing.push('એરિયા');
+      if (location === 'અન્ય' && (!locationOther || !locationOther.trim())) missing.push('અન્ય એરિયા');
       if (!education || !education.trim()) missing.push('અભ્યાસ');
       if (!interest || !interest.trim()) missing.push('રુચિનો વિષય');
       if (!joinMedium || !joinMedium.trim()) missing.push('કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો?');
@@ -85,6 +86,7 @@ router.post('/register', (req, res) => {
         whatsapp: (whatsapp || '').trim(),
         email: (email || '').trim(),
         location: location.trim(),
+        locationOther: location === 'અન્ય' ? (locationOther || '').trim() : '',
         houseNumber: (houseNumber || '').trim(),
         society: (society || '').trim(),
         landmark: (landmark || '').trim(),

@@ -22,9 +22,15 @@
   <a href="/register" class="brand"><span class="brand-dot"></span>યુવા સંગમ ૨૦૨૬ (રાષ્ટ્રીય સ્વયંસેવક સંઘ)</a>
   <nav>
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-      <a href="/admin/dashboard">Dashboard</a>
+      <a href="/admin/dashboard">ડેશબોર્ડ</a>
+      <% if (typeof adminRole !== 'undefined' && adminRole === 'main') { %>
+        <a href="/admin/events">ઇવેન્ટ્સ</a>
+        <a href="/admin/event-admins">ઇવેન્ટ એડમિન</a>
+      <% } else { %>
+        <a href="/admin/events">મારો ઇવેન્ટ</a>
+      <% } %>
       <form action="/admin/logout" method="POST" style="display:inline">
-        <button type="submit">Logout</button>
+        <button type="submit">લોગઆઉટ</button>
       </form>
     <% } else { %>
       <a href="/register">નોંધણી કરો</a>

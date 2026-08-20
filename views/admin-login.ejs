@@ -1,11 +1,11 @@
-<% var pageTitle = 'Admin Login'; %>
+<% var pageTitle = 'એડમિન લોગિન'; %>
 <% var bodyClass = 'page-admin-login'; %>
 <%- include('partials/header') %>
 
 <div class="container login-wrap">
   <div class="card login-card">
     <div class="login-icon">🔐</div>
-    <h1 class="text-center">Admin Login</h1>
+    <h1 class="text-center">એડમિન લોગિન</h1>
 
     <% if (error) { %>
       <div class="alert alert-error"><%= error %></div>
@@ -14,14 +14,21 @@
     <form action="/admin/login" method="POST">
       <input type="hidden" name="next" value="<%= typeof next !== 'undefined' ? next : '/admin/dashboard' %>" />
       <div class="field" style="margin-bottom:16px;">
-        <label>Username</label>
+        <label>એડમિન પ્રકાર</label>
+        <select name="adminType">
+          <option value="main">મુખ્ય એડમિન</option>
+          <option value="event">ઇવેન્ટ એડમિન</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <label>વપરાશકર્તા નામ</label>
         <input type="text" name="username" required placeholder="admin" autofocus />
       </div>
       <div class="field" style="margin-bottom:16px;">
-        <label>Password</label>
+        <label>પાસવર્ડ</label>
         <input type="password" name="password" required placeholder="••••••••" />
       </div>
-      <button type="submit" class="btn btn-block btn-glow">🔓 Login</button>
+      <button type="submit" class="btn btn-block btn-glow">🔓 લોગીન કરો</button>
     </form>
 
   </div>
