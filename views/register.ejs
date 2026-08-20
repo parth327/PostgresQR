@@ -2,19 +2,168 @@
 <% var bodyClass = 'page-register'; %>
 <%- include('partials/header') %>
 
+<!-- ===================================================================
+     Landing page (added on top of the existing registration form below).
+     Modelled on the reference site design; language toggle covers this
+     section and the registration form. Convention date/venue/countdown
+     details from the reference are intentionally left out.
+     =================================================================== -->
+
+<nav class="ys-navbar">
+  <div class="ys-nav-container">
+    <a href="#top" class="ys-nav-brand">
+      <img src="/img/ys-logo.png" alt="Yuva Sangam Logo" class="ys-nav-logo-img" />
+      <span class="ys-nav-brand-text" data-i18n="nav-brand">યુવા સંગમ ૨૦૨૬</span>
+    </a>
+    <button class="ys-nav-toggle" id="ys-nav-toggle" aria-label="Toggle Navigation">
+      <span class="ys-hamburger-bar"></span>
+      <span class="ys-hamburger-bar"></span>
+      <span class="ys-hamburger-bar"></span>
+    </button>
+    <ul class="ys-nav-links">
+      <li><a href="#top" class="ys-nav-link" data-i18n="nav-home">મુખ્ય પૃષ્ઠ</a></li>
+      <li><a href="#ys-mission" class="ys-nav-link" data-i18n="nav-about">ધ્યેય</a></li>
+      <li><a href="#ys-features" class="ys-nav-link" data-i18n="nav-features">વિશેષતાઓ</a></li>
+      <li><a href="#regForm" class="ys-nav-register-btn" data-i18n="nav-register">નોંધણી કરો</a></li>
+      <li><a href="/admin/login" class="ys-nav-link" data-i18n="nav-admin">એડમિન લોગિન</a></li>
+      <li>
+        <div class="ys-lang-selector">
+          <svg class="ys-lang-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <select id="ys-lang-select" class="ys-lang-select" aria-label="Language / ભાષા">
+            <option value="gu">ગુજરાતી</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<a id="top"></a>
+<section class="ys-hero">
+  <div class="ys-hero-inner">
+    <div class="ys-hero-devgiri" data-i18n="hero-devgiri">રાષ્ટ્રીય સ્વયંસેવક સંઘ</div>
+    <h2 class="ys-hero-branch" data-i18n="hero-branch">નરોડા ભાગ</h2>
+    <div class="ys-logo-wrap">
+      <img src="/img/ys-logo.png" alt="Yuva Sangam" class="ys-main-logo" />
+    </div>
+    <h2 class="ys-hero-subtitle" data-i18n="hero-subtitle">સાથે મળીને, રાષ્ટ્ર માટે...</h2>
+  </div>
+</section>
+
+<section class="ys-main-content" id="ys-features">
+  <div class="ys-content-grid">
+    <div class="ys-reveal">
+      <div class="ys-section-card">
+        <h2 class="ys-card-heading">
+          <span class="ys-heading-highlight" data-i18n="features-heading-highlight">શા માટે</span><span data-i18n="features-heading-text"> યુવા સંગમમાં જોડાવું?</span>
+        </h2>
+        <div class="ys-features-list">
+          <div class="ys-feature-item">
+            <div class="ys-feature-icon-wrapper ys-orange-glow">
+              <svg viewBox="0 0 24 24" class="ys-feature-icon"><path d="M5 9.2h3V19H5V9.2zM10.5 5h3v14h-3V5zm5.5 8h3v6h-3v-6zM2 21h20v2H2v-2z"/><circle cx="12" cy="3" r="1.5"/></svg>
+            </div>
+            <div class="ys-feature-text">
+              <h3 data-i18n="feature-1-title">વ્યક્તિત્વ વિકાસ</h3>
+              <p data-i18n="feature-1-desc">આપણા આંતરિક ગુણોને ખીલવીને એક ઉત્તમ અને પ્રભાવશાળી વ્યક્તિત્વનું નિર્માણ કરવું.</p>
+            </div>
+          </div>
+          <div class="ys-feature-item">
+            <div class="ys-feature-icon-wrapper ys-gold-glow">
+              <svg viewBox="0 0 24 24" class="ys-feature-icon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <div class="ys-feature-text">
+              <h3 data-i18n="feature-2-title">નેતૃત્વ ગુણ અને શિસ્ત</h3>
+              <p data-i18n="feature-2-desc">જીવનમાં શિસ્તનું મહત્વ સમજીને રાષ્ટ્ર સેવા માટે નેતૃત્વ ક્ષમતા વિકસાવવી.</p>
+            </div>
+          </div>
+          <div class="ys-feature-item">
+            <div class="ys-feature-icon-wrapper ys-green-glow">
+              <svg viewBox="0 0 24 24" class="ys-feature-icon"><path d="M12.4 5H5v17H3V3h9.4l.6 2h7v11H13l-.6-2z"/></svg>
+            </div>
+            <div class="ys-feature-text">
+              <h3 data-i18n="feature-3-title">રાષ્ટ્રકાર્ય માટે પ્રેરણા</h3>
+              <p data-i18n="feature-3-desc">દેશની ઉન્નતિ અને વિકાસ માટે સક્રિય યોગદાન આપવાની ઊર્જા અને પ્રેરણા મેળવવી.</p>
+            </div>
+          </div>
+          <div class="ys-feature-item">
+            <div class="ys-feature-icon-wrapper ys-blue-glow">
+              <svg viewBox="0 0 24 24" class="ys-feature-icon"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/><path d="M22 12.97l-10 5.45-10-5.45V18l10 5.5 10-5.5v-5.03z"/></svg>
+            </div>
+            <div class="ys-feature-text">
+              <h3 data-i18n="feature-4-title">સંસ્કારી અને સક્ષમ યુવક ઘડવાનો સંકલ્પ</h3>
+              <p data-i18n="feature-4-desc">નૈતિક મૂલ્યો અને આધુનિક કૌશલ્યો સાથે સક્ષમ યુવા પેઢીનું ઘડતર કરવાનો અડગ નિર્ધાર.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ys-right-panel ys-reveal ys-delay-1">
+      <div class="ys-image-3d">
+        <div class="ys-glowing-halo"></div>
+        <img src="/img/ys-bharat-mata.png" alt="Bharat Mata" class="ys-bharat-mata-img" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ys-mission-section ys-reveal" id="ys-mission">
+  <h2 class="ys-mission-heading" data-i18n="mission-title">આપણું ધ્યેય:</h2>
+  <div class="ys-mission-grid">
+    <div class="ys-mission-card ys-saffron-theme">
+      <div class="ys-mission-icon">ॐ</div>
+      <h3 data-i18n="mission-1-title">ધર્મ આપણી ઓળખ છે...</h3>
+      <p data-i18n="mission-1-desc">આપણા સનાતન મૂલ્યો, કર્તવ્ય અને નૈતિકતા એ આપણી મૂળભૂત ઓળખ છે.</p>
+    </div>
+    <div class="ys-mission-card ys-white-theme">
+      <div class="ys-mission-icon">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.4z"/></svg>
+      </div>
+      <h3 data-i18n="mission-2-title">સંસ્કૃતિ આપણો વારસો છે...</h3>
+      <p data-i18n="mission-2-desc">આપણી ભવ્ય સંસ્કૃતિ અને સમૃદ્ધ વારસો એ આપણું સૌથી મોટું ગૌરવ છે.</p>
+    </div>
+    <div class="ys-mission-card ys-green-theme">
+      <div class="ys-mission-icon">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>
+      </div>
+      <h3 data-i18n="mission-3-title">રાષ્ટ્ર આપણું કર્તવ્ય છે...</h3>
+      <p data-i18n="mission-3-desc">રાષ્ટ્ર પ્રત્યે સમર્પણ અને દેશસેવા એ આપણું પરમ કર્તવ્ય છે.</p>
+    </div>
+  </div>
+</section>
+
+<section class="ys-quote-section ys-reveal">
+  <div class="ys-quote-box">
+    <p class="ys-quote-text" data-i18n="quote-text">"યુવા કેવળ ભવિષ્ય નથી, વર્તમાનની શક્તિ છે.."</p>
+  </div>
+</section>
+
+<section class="ys-youngsters-section ys-reveal">
+  <div class="ys-youngsters-container">
+    <img src="/img/ys-youngsters.jpg" alt="Youngsters of India" class="ys-youngsters-img" />
+    <div class="ys-youngsters-glow"></div>
+  </div>
+</section>
+
+<!-- ===================================================================
+     Existing registration form (unchanged below — now appears after the
+     landing content above; only data-i18n attributes were added to its
+     text so the language switch can translate it too).
+     =================================================================== -->
+
 <div class="container">
   <div class="card fade-in-up">
     <div class="form-hero">
       <img src="/css/bharat-mata-bg.jpg" alt="Bharat Mata" class="hero-portrait" />
-      <h2 class="hero-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</h2>
-      <h1>યુવા સંગમ ૨૦૨૬</h1>
-      <p class="subtitle">નમસ્તે મિત્રો, યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
+      <h2 class="hero-badge" data-i18n="reg-heading-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</h2>
+      <h1 data-i18n="reg-heading-title">યુવા સંગમ ૨૦૨૬</h1>
+      <p class="subtitle" data-i18n="reg-heading-subtitle">નમસ્તે મિત્રો, યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
     </div>
 
     <div class="progress-track" aria-hidden="true">
       <div class="progress-fill" id="progressFill"></div>
     </div>
-    <p class="progress-label" id="progressLabel">0% પૂર્ણ</p>
+    <p class="progress-label" id="progressLabel" data-i18n-suffix>0% પૂર્ણ</p>
 
     <% if (error) { %>
       <div class="alert alert-error shake">⚠️ <%= error %></div>
@@ -23,53 +172,53 @@
     <form action="/register" method="POST" enctype="multipart/form-data" id="regForm" novalidate>
 
       <div class="form-section stagger" style="--d:1">
-        <h3 class="section-title"><span class="section-num">1</span> વ્યક્તિગત માહિતી</h3>
+        <h3 class="section-title"><span class="section-num">1</span> <span data-i18n="sec-1-title">વ્યક્તિગત માહિતી</span></h3>
         <div class="form-grid">
           <div class="field full">
-            <label for="f-name">👤 પૂરું નામ <span class="req">*</span></label>
-            <input type="text" id="f-name" name="name" required value="<%= formData.name || '' %>" placeholder="દા.ત. રમેશ પટેલ" />
+            <label for="f-name"><span data-i18n="lbl-name">👤 પૂરું નામ</span> <span class="req">*</span></label>
+            <input type="text" id="f-name" name="name" required value="<%= formData.name || '' %>" placeholder="દા.ત. રમેશ પટેલ" data-i18n-placeholder="ph-name" />
           </div>
 
           <div class="field">
-            <label for="f-age">🎂 ઉંમર <span class="req">*</span></label>
-            <input type="number" id="f-age" name="age" required min="15" max="100" value="<%= formData.age || '' %>" placeholder="15 - 100" />
+            <label for="f-age"><span data-i18n="lbl-age">🎂 ઉંમર</span> <span class="req">*</span></label>
+            <input type="number" id="f-age" name="age" required min="15" max="100" value="<%= formData.age || '' %>" placeholder="15 - 100" data-i18n-placeholder="ph-age" />
           </div>
 
           <div class="field">
-            <label for="f-education">🎓 અભ્યાસ <span class="req">*</span></label>
-            <input type="text" id="f-education" name="education" required value="<%= formData.education || '' %>" placeholder="દા.ત. B.Tech Computer Science" />
+            <label for="f-education"><span data-i18n="lbl-education">🎓 અભ્યાસ</span> <span class="req">*</span></label>
+            <input type="text" id="f-education" name="education" required value="<%= formData.education || '' %>" placeholder="દા.ત. B.Tech Computer Science" data-i18n-placeholder="ph-education" />
           </div>
         </div>
       </div>
 
       <div class="form-section stagger" style="--d:2">
-        <h3 class="section-title"><span class="section-num">2</span> સંપર્ક વિગતો</h3>
+        <h3 class="section-title"><span class="section-num">2</span> <span data-i18n="sec-2-title">સંપર્ક વિગતો</span></h3>
         <div class="form-grid">
           <div class="field">
-            <label for="f-phone">📱 ફોન નંબર <span class="req">*</span></label>
-            <input type="tel" id="f-phone" name="phone" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.phone || '' %>" placeholder="દા.ત. 9876543210" />
+            <label for="f-phone"><span data-i18n="lbl-phone">📱 ફોન નંબર</span> <span class="req">*</span></label>
+            <input type="tel" id="f-phone" name="phone" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.phone || '' %>" placeholder="દા.ત. 9876543210" data-i18n-placeholder="ph-phone" />
           </div>
 
           <div class="field">
-            <label for="f-whatsapp">💬 વોટ્સએપ નંબર (જો હોય તો)</label>
-            <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" />
+            <label for="f-whatsapp" data-i18n="lbl-whatsapp">💬 વોટ્સએપ નંબર (જો હોય તો)</label>
+            <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.whatsapp || '' %>" placeholder="દા.ત. 9876543210" data-i18n-placeholder="ph-whatsapp" />
           </div>
 
           <div class="field">
-            <label for="f-email">📧 ઈમેલ <span class="req">*</span></label>
-            <input type="email" id="f-email" name="email" required value="<%= formData.email || '' %>" placeholder="દા.ત. name@example.com" />
-            <small class="field-hint">તમારો QR કોડ આ ઈમેલ પર મોકલવામાં આવશે.</small>
+            <label for="f-email"><span data-i18n="lbl-email">📧 ઈમેલ</span> <span class="req">*</span></label>
+            <input type="email" id="f-email" name="email" required value="<%= formData.email || '' %>" placeholder="દા.ત. name@example.com" data-i18n-placeholder="ph-email" />
+            <small class="field-hint" data-i18n="hint-email">તમારો QR કોડ આ ઈમેલ પર મોકલવામાં આવશે.</small>
           </div>
         </div>
       </div>
 
       <div class="form-section stagger" style="--d:3">
-        <h3 class="section-title"><span class="section-num">3</span> સરનામું</h3>
+        <h3 class="section-title"><span class="section-num">3</span> <span data-i18n="sec-3-title">સરનામું</span></h3>
         <div class="form-grid">
           <div class="field">
-            <label for="f-location">📍 એરિયા <span class="req">*</span></label>
-            <select id="f-location" name="location" required>
-              <option value="" disabled <%= !formData.location ? 'selected' : '' %>>પસંદ કરો</option>
+            <label for="f-location"><span data-i18n="lbl-location">📍 એરિયા</span> <span class="req">*</span></label>
+            <select id="f-location" name="location" required data-i18n-options>
+              <option value="" disabled <%= !formData.location ? 'selected' : '' %> data-i18n="opt-select">પસંદ કરો</option>
               <% ['કૃષ્ણા નગર','કુબેરનગર','સૈજપુર','સરદારનગર','નરોડા','હરિદર્શન','અન્ય'].forEach(function(opt) { %>
                 <option value="<%= opt %>" <%= formData.location === opt ? 'selected' : '' %>><%= opt %></option>
               <% }); %>
@@ -77,39 +226,39 @@
           </div>
 
           <div class="field full" id="locationOtherWrap" style="display:none;">
-            <label for="f-locationOther">📍 અન્ય એરિયા <span class="req">*</span></label>
-            <input type="text" id="f-locationOther" name="locationOther" value="<%= formData.locationOther || '' %>" placeholder="કૃપા કરીને તમારો એરિયા જણાવો" />
+            <label for="f-locationOther"><span data-i18n="lbl-location-other">📍 અન્ય એરિયા</span> <span class="req">*</span></label>
+            <input type="text" id="f-locationOther" name="locationOther" value="<%= formData.locationOther || '' %>" placeholder="કૃપા કરીને તમારો એરિયા જણાવો" data-i18n-placeholder="ph-location-other" />
           </div>
 
           <div class="field">
-            <label for="f-pincode">🏷️ પિનકોડ <span class="req">*</span></label>
-            <input type="text" id="f-pincode" name="pincode" required inputmode="numeric" maxlength="6" value="<%= formData.pincode || '' %>" placeholder="દા.ત. 382330" />
+            <label for="f-pincode"><span data-i18n="lbl-pincode">🏷️ પિનકોડ</span> <span class="req">*</span></label>
+            <input type="text" id="f-pincode" name="pincode" required inputmode="numeric" maxlength="6" value="<%= formData.pincode || '' %>" placeholder="દા.ત. 382330" data-i18n-placeholder="ph-pincode" />
           </div>
 
           <div class="field">
-            <label for="f-houseNumber">🏠 ઘર નંબર</label>
-            <input type="text" id="f-houseNumber" name="houseNumber" value="<%= formData.houseNumber || '' %>" placeholder="દા.ત. 12/A" />
+            <label for="f-houseNumber" data-i18n="lbl-houseNumber">🏠 ઘર નંબર</label>
+            <input type="text" id="f-houseNumber" name="houseNumber" value="<%= formData.houseNumber || '' %>" placeholder="દા.ત. 12/A" data-i18n-placeholder="ph-houseNumber" />
           </div>
 
           <div class="field">
-            <label for="f-society">🏘️ સોસાયટી</label>
-            <input type="text" id="f-society" name="society" value="<%= formData.society || '' %>" placeholder="સોસાયટીનું નામ" />
+            <label for="f-society" data-i18n="lbl-society">🏘️ સોસાયટી</label>
+            <input type="text" id="f-society" name="society" value="<%= formData.society || '' %>" placeholder="સોસાયટીનું નામ" data-i18n-placeholder="ph-society" />
           </div>
 
           <div class="field full">
-            <label for="f-landmark">🧭 લેન્ડમાર્ક</label>
-            <input type="text" id="f-landmark" name="landmark" value="<%= formData.landmark || '' %>" placeholder="નજીકનું જાણીતું સ્થળ" />
+            <label for="f-landmark" data-i18n="lbl-landmark">🧭 લેન્ડમાર્ક</label>
+            <input type="text" id="f-landmark" name="landmark" value="<%= formData.landmark || '' %>" placeholder="નજીકનું જાણીતું સ્થળ" data-i18n-placeholder="ph-landmark" />
           </div>
         </div>
       </div>
 
       <div class="form-section stagger" style="--d:4">
-        <h3 class="section-title"><span class="section-num">4</span> રુચિ અને જોડાણ</h3>
+        <h3 class="section-title"><span class="section-num">4</span> <span data-i18n="sec-4-title">રુચિ અને જોડાણ</span></h3>
         <div class="form-grid">
           <div class="field full">
-            <label for="f-interest">✨ રુચિનો વિષય <span class="req">*</span></label>
-            <select id="f-interest" name="interest" required>
-              <option value="" disabled <%= !formData.interest ? 'selected' : '' %>>પસંદ કરો</option>
+            <label for="f-interest"><span data-i18n="lbl-interest">✨ રુચિનો વિષય</span> <span class="req">*</span></label>
+            <select id="f-interest" name="interest" required data-i18n-options>
+              <option value="" disabled <%= !formData.interest ? 'selected' : '' %> data-i18n="opt-select">પસંદ કરો</option>
               <% ['સેવા','પર્યાવરણ','વાંચન','લેખન','વક્તા','રમત'].forEach(function(opt) { %>
                 <option value="<%= opt %>" <%= formData.interest === opt ? 'selected' : '' %>><%= opt %></option>
               <% }); %>
@@ -117,9 +266,9 @@
           </div>
 
           <div class="field full">
-            <label for="joinMedium">🤝 કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો? <span class="req">*</span></label>
-            <select name="joinMedium" id="joinMedium" required>
-              <option value="" disabled <%= !formData.joinMedium ? 'selected' : '' %>>પસંદ કરો</option>
+            <label for="joinMedium"><span data-i18n="lbl-joinMedium">🤝 કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો?</span> <span class="req">*</span></label>
+            <select name="joinMedium" id="joinMedium" required data-i18n-options>
+              <option value="" disabled <%= !formData.joinMedium ? 'selected' : '' %> data-i18n="opt-select">પસંદ કરો</option>
               <% ['શાખા','સાપ્તાહિક મિલન','અન્ય'].forEach(function(opt) { %>
                 <option value="<%= opt %>" <%= formData.joinMedium === opt ? 'selected' : '' %>><%= opt %></option>
               <% }); %>
@@ -127,8 +276,18 @@
           </div>
 
           <div class="field full" id="joinMediumOtherWrap" style="display:none;">
-            <label for="joinMediumOther">✍️ અન્ય <span class="req">*</span></label>
-            <input type="text" name="joinMediumOther" id="joinMediumOther" value="<%= formData.joinMediumOther || '' %>" placeholder="કૃપા કરીને જણાવો" />
+            <label for="joinMediumOther"><span data-i18n="lbl-joinMedium-other">✍️ અન્ય</span> <span class="req">*</span></label>
+            <input type="text" name="joinMediumOther" id="joinMediumOther" value="<%= formData.joinMediumOther || '' %>" placeholder="કૃપા કરીને જણાવો" data-i18n-placeholder="ph-joinMedium-other" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section stagger" style="--d:5">
+        <h3 class="section-title"><span class="section-num">5</span> <span data-i18n="sec-5-title">તમારો પ્રશ્ન</span></h3>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="f-rss-question" data-i18n="lbl-rss-question">💬 તમારા મનમાં સંઘ કે સંઘના કાર્ય વિશે જિજ્ઞાસા હોય તો આપ અહીંયા લખી શકો છો તમારા પ્રશ્નનો પ્રત્યુતર યુવાસંગમમાં અધિકારી દ્વારા મળશે.</label>
+            <textarea id="f-rss-question" name="notes" rows="3" placeholder="તમારો પ્રશ્ન અહીં લખો... (વૈકલ્પિક)" data-i18n-placeholder="ph-rss-question"><%= formData.notes || '' %></textarea>
           </div>
         </div>
       </div>
@@ -154,20 +313,30 @@
       <div class="field" style="display:none;">
         <input type="file" name="photo" accept="image/*" />
       </div>
-      <div class="field" style="display:none;">
-        <textarea name="notes"><%= formData.notes || '' %></textarea>
-      </div>
 
       <div class="actions-row">
         <button type="submit" class="btn btn-block btn-glow" id="submitBtn" disabled>
-          <span class="btn-text">ક્લિક કરો અને તમારો ક્યુઆર કોડ જનરેટ કરો</span>
+          <span class="btn-text" data-i18n="btn-submit">ક્લિક કરો અને તમારો ક્યુઆર કોડ જનરેટ કરો</span>
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
       </div>
-      <p class="form-privacy-note">🔒 તમારી માહિતી ફક્ત એડમિન જ QR કોડ સ્કેન કરીને જોઈ શકશે.</p>
+      <p class="form-privacy-note" data-i18n="privacy-note">🔒 તમારી માહિતી ફક્ત એડમિન જ QR કોડ સ્કેન કરીને જોઈ શકશે.</p>
     </form>
   </div>
 </div>
+
+<footer class="ys-footer">
+  <div class="ys-footer-pillars">
+    <div class="ys-pillar"><span class="ys-pillar-icon">🚩</span><span data-i18n="footer-pillar-seva">સેવા</span></div>
+    <div class="ys-divider">|</div>
+    <div class="ys-pillar"><span class="ys-pillar-icon">🪷</span><span data-i18n="footer-pillar-sanskar">સંસ્કાર</span></div>
+    <div class="ys-divider">|</div>
+    <div class="ys-pillar"><span class="ys-pillar-icon">☀️</span><span data-i18n="footer-pillar-sangathan">સંગઠન</span></div>
+  </div>
+  <p class="ys-copyright" data-i18n="footer-copyright">© ૨૦૨૬ યુવા સંગમ. રાષ્ટ્ર સેવામાં સમર્પિત.</p>
+</footer>
+
+<script src="/js/i18n.js"></script>
 
 <script>
   (function () {
@@ -233,7 +402,8 @@
       var filled = fields.filter(fieldIsValid).length;
       var pct = fields.length ? Math.round((filled / fields.length) * 100) : 0;
       progressFill.style.width = pct + '%';
-      progressLabel.textContent = pct + '% પૂર્ણ';
+      var pctSuffix = document.documentElement.getAttribute('lang') === 'en' ? '% Complete' : '% પૂર્ણ';
+      progressLabel.textContent = pct + pctSuffix;
       btn.disabled = pct < 100;
     }
 
@@ -278,5 +448,7 @@
     });
   })();
 </script>
+
+<script src="/js/landing.js"></script>
 
 <%- include('partials/footer') %>
