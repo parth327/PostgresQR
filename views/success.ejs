@@ -22,4 +22,13 @@
   </div>
 </div>
 
+<script>
+  // Celebratory saffron/gold fireworks burst on successful registration.
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (window.createFireworks) window.createFireworks();
+    }, 300);
+  });
+</script>
+
 <%- include('partials/footer') %>
