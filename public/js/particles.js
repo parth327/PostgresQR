@@ -92,19 +92,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const volOnIcon = document.querySelector('.volume-on');
   const volOffIcon = document.querySelector('.volume-off');
   let isPlaying = false;
+  let userDisabled = false; // true only if user explicitly muted via the toggle
 
   function setIcons(playing) {
     if (volOnIcon) volOnIcon.classList.toggle('hidden', !playing);
     if (volOffIcon) volOffIcon.classList.toggle('hidden', playing);
   }
 
-  function playMusic() {
+  function playMusic(unmute) {
     if (!audioPlayer) return;
-    audioPlayer.muted = false;
+    if (unmute) audioPlayer.muted = false;
     const p = audioPlayer.play();
     if (p !== undefined) {
-      p.then(() => { isPlaying = true; setIcons(true); })
-       .catch(() => { isPlaying = false; setIcons(false); });
+      p.then(() => {
+        isPlaying = !audioPlayer.muted;
+        setIcons(isPlaying);
+      }).catch(() => {
+        isPlaying = false;
+        setIcons(false);
+      });
     }
   }
 
@@ -117,22 +123,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (audioPlayer) {
     audioPlayer.volume = 0.35;
-    playMusic();
+    // Muted autoplay is always allowed by browsers, so this starts silently.
+    playMusic(false);
+    setIcons(false); // show "off" icon until the user actually hears sound
 
-    // Autoplay is commonly blocked until the user interacts — retry once.
+    // Browsers require a real user gesture before unmuted sound can play.
+    // Unmute (and start, if needed) on the first genuine interaction.
     const autoPlayEvents = ['click', 'touchstart', 'keydown'];
-    function playOnInteraction() {
-      if (!isPlaying) playMusic();
-      autoPlayEvents.forEach((ev) => window.removeEventListener(ev, playOnInteraction));
+    function unmuteOnFirstInteraction() {
+      autoPlayEvents.forEach((ev) => window.removeEventListener(ev, unmuteOnFirstInteraction));
+      if (userDisabled) return; // user already turned it off on purpose
+      playMusic(true);
     }
-    autoPlayEvents.forEach((ev) => window.addEventListener(ev, playOnInteraction));
+    autoPlayEvents.forEach((ev) => window.addEventListener(ev, unmuteOnFirstInteraction, { once: true }));
   }
 
   if (audioToggle) {
     audioToggle.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (isPlaying) pauseMusic();
-      else playMusic();
+      if (isPlaying) {
+        userDisabled = true;
+        pauseMusic();
+      } else {
+        userDisabled = false;
+        playMusic(true);
+      }
     });
   }
 });
