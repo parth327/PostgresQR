@@ -286,6 +286,7 @@ router.get('/events', requireAdmin, async (req, res, next) => {
       adminUsername: req.session.adminUsername,
       adminRole: req.session.adminRole,
       isAdmin: true,
+      query: req.query,
     });
   } catch (err) {
     next(err);
@@ -308,7 +309,10 @@ router.get('/events/create', requireMainAdmin, (req, res) => {
 // POST /admin/events/create -> create new event (main admin only)
 router.post('/events/create', requireMainAdmin, async (req, res, next) => {
   try {
-    const { eventName, eventDate, eventDescription, location, maxCapacity } = req.body;
+    const {
+      eventName, eventDate, eventTime, eventDescription, location, maxCapacity,
+      contact1Name, contact1Mobile, contact2Name, contact2Mobile,
+    } = req.body;
 
     if (!eventName || !eventDate) {
       const today = new Date().toISOString().split('T')[0];
@@ -325,12 +329,97 @@ router.post('/events/create', requireMainAdmin, async (req, res, next) => {
     await db.createEvent({
       name: eventName,
       date: eventDate,
+      time: eventTime || '',
       description: eventDescription || '',
       location: location || '',
       maxCapacity: maxCapacity || null,
+      contact1Name: contact1Name || '',
+      contact1Mobile: contact1Mobile || '',
+      contact2Name: contact2Name || '',
+      contact2Mobile: contact2Mobile || '',
     });
 
     res.redirect('/admin/events');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/events/:id/edit -> show edit event form (main admin only)
+router.get('/events/:id/edit', requireMainAdmin, async (req, res, next) => {
+  try {
+    const event = await db.getEventById(req.params.id);
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+
+    const today = new Date().toISOString().split('T')[0];
+    res.render('admin-event-form', {
+      event: {
+        id: event.id,
+        eventName: event.event_name,
+        // event_date comes back from pg as a JS Date at UTC midnight for
+        // DATE columns — format to plain YYYY-MM-DD for the <input type=date>.
+        eventDate: event.event_date instanceof Date
+          ? event.event_date.toISOString().split('T')[0]
+          : String(event.event_date).split('T')[0],
+        eventTime: event.event_time || '',
+        location: event.location || '',
+        maxCapacity: event.max_capacity || '',
+        eventDescription: event.event_description || '',
+        contact1Name: event.contact1_name || '',
+        contact1Mobile: event.contact1_mobile || '',
+        contact2Name: event.contact2_name || '',
+        contact2Mobile: event.contact2_mobile || '',
+      },
+      isEdit: true,
+      error: null,
+      today,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/events/:id/edit -> save edited event (main admin only)
+router.post('/events/:id/edit', requireMainAdmin, async (req, res, next) => {
+  try {
+    const existing = await db.getEventById(req.params.id);
+    if (!existing) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+
+    const {
+      eventName, eventDate, eventTime, eventDescription, location, maxCapacity,
+      contact1Name, contact1Mobile, contact2Name, contact2Mobile,
+    } = req.body;
+
+    if (!eventName || !eventDate) {
+      const today = new Date().toISOString().split('T')[0];
+      return res.render('admin-event-form', {
+        event: { ...req.body, id: req.params.id },
+        isEdit: true,
+        error: 'ઇવેન્ટનું નામ અને તારીખ ફરજિયાત છે.',
+        today,
+        adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
+        isAdmin: true,
+      });
+    }
+
+    await db.updateEvent(req.params.id, {
+      name: eventName,
+      date: eventDate,
+      time: eventTime || '',
+      description: eventDescription || '',
+      location: location || '',
+      maxCapacity: maxCapacity || null,
+      contact1Name: contact1Name || '',
+      contact1Mobile: contact1Mobile || '',
+      contact2Name: contact2Name || '',
+      contact2Mobile: contact2Mobile || '',
+    });
+
+    res.redirect(`/admin/events/${req.params.id}`);
   } catch (err) {
     next(err);
   }
@@ -417,6 +506,18 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
 });
 
 // GET /admin/events/export -> export the all-events summary (main admin only)
+
+// POST /admin/events/:id/delete -> delete an event (main admin only)
+router.post('/events/:id/delete', requireMainAdmin, async (req, res, next) => {
+  try {
+    const deleted = await db.deleteEvent(req.params.id);
+    if (!deleted) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+    res.redirect('/admin/events?deleted=1');
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/events/export', requireMainAdmin, async (req, res, next) => {
   try {
     const events = await db.getAllEventsWithAttendanceCounts();
@@ -576,6 +677,75 @@ router.get('/events/:id', requireAdmin, requireEventAccess, async (req, res, nex
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+// ==================== CUSTOM EMAIL (user list page, main admin only) ====================
+// A free-form, single-recipient email composer reachable straight from the
+// user list ("✉" button per row, or the "Custom Email" button up top) —
+// unlike the event-email sender above, this is never tied to an event and
+// never sends to a bulk list, so it can go out immediately with no
+// confirmation step.
+
+// GET /admin/custom-email -> compose form. ?to= & ?name= optionally prefill
+// the recipient (used by the per-row "✉" button on the dashboard).
+router.get('/custom-email', requireMainAdmin, (req, res) => {
+  res.render('admin-custom-email', {
+    adminUsername: req.session.adminUsername,
+    adminRole: req.session.adminRole,
+    isAdmin: true,
+    result: null,
+    error: null,
+    formData: {
+      to: req.query.to || '',
+      name: req.query.name || '',
+    },
+  });
+});
+
+// POST /admin/custom-email -> send the composed email to a single, freely
+// editable address (does not have to belong to any registered user).
+router.post('/custom-email', requireMainAdmin, async (req, res, next) => {
+  try {
+    const { to, name, subject, message } = req.body;
+    const renderBase = {
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!to || !emailRegex.test(to.trim()) || !subject || !subject.trim() || !message || !message.trim()) {
+      return res.render('admin-custom-email', {
+        ...renderBase,
+        result: null,
+        error: 'કૃપા કરીને યોગ્ય ઈમેલ સરનામું, વિષય અને સંદેશ ભરો.',
+        formData: req.body,
+      });
+    }
+
+    const bodyHtml = buildEmailBodyHtml(message);
+    const outcome = await notify.sendEventEmail({
+      to: to.trim(),
+      name: name ? name.trim() : null,
+      subject: subject.trim(),
+      bodyHtml,
+    });
+
+    res.render('admin-custom-email', {
+      ...renderBase,
+      error: null,
+      formData: { to: to.trim(), name: name || '' },
+      result: {
+        to: to.trim(),
+        sent: outcome.success ? 1 : 0,
+        failed: outcome.success || outcome.skipped ? 0 : 1,
+        skipped: outcome.skipped ? 1 : 0,
+        skipReason: outcome.skipped ? outcome.reason : null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /admin/events/:id/email -> compose form for the manual event email
 // (main admin only — event admins can no longer access the custom email sender)
