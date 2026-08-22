@@ -48,14 +48,14 @@ req.end();
 // header/footer only lives in one place.
 function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, imageCid }) {
   const ctaButton = ctaText && ctaUrl
-    ? `<tr><td align="center" style="padding:0 32px 32px;">
-         <a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 28px;border-radius:999px;">${ctaText}</a>
+    ? `<tr><td align="center" style="padding:4px 32px 34px;">
+         <a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#ff8a00 0%,#e65c00 55%,#b33600 100%);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 34px;border-radius:999px;box-shadow:0 6px 16px rgba(230,92,0,0.35);">${ctaText}</a>
        </td></tr>`
     : '';
 
   const qrImage = imageCid
-    ? `<tr><td align="center" style="padding:0 32px 24px;">
-         <div style="background:#f7f6fd;border:1px solid #e6e3f5;border-radius:16px;padding:20px;display:inline-block;">
+    ? `<tr><td align="center" style="padding:0 32px 28px;">
+         <div style="background:#fff8f0;border:2px dashed rgba(230,92,0,0.35);border-radius:18px;padding:22px;display:inline-block;">
            <img src="cid:${imageCid}" width="220" height="220" alt="QR Code" style="display:block;border-radius:10px;" />
          </div>
        </td></tr>`
@@ -63,27 +63,40 @@ function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, imageCid }) {
 
   return `<!DOCTYPE html>
 <html lang="gu">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#f7f6fd;font-family:'Noto Sans Gujarati','Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6fd;padding:24px 0;">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background:#fdf3e7;font-family:'Noto Sans Gujarati','Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fdf3e7;padding:32px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(109,40,217,0.12);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(179,54,0,0.16);border:1px solid rgba(230,92,0,0.12);">
+          <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);padding:28px 32px;text-align:center;">
-              <div style="font-size:13px;color:#f1ecfd;font-weight:700;letter-spacing:0.03em;margin-bottom:6px;">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</div>
-              <div style="font-size:22px;color:#ffffff;font-weight:800;">યુવા સંગમ ૨૦૨૬</div>
+            <td style="background:linear-gradient(135deg,#ff8a00 0%,#e65c00 55%,#b33600 100%);padding:34px 32px 30px;text-align:center;">
+              <div style="font-size:13px;color:#fff1e0;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;text-transform:uppercase;">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</div>
+              <div style="font-size:26px;color:#ffffff;font-weight:800;letter-spacing:0.01em;text-shadow:0 2px 6px rgba(0,0,0,0.15);">યુવા સંગમ ૨૦૨૬</div>
             </td>
           </tr>
+          <!-- Accent divider -->
+          <tr><td style="height:5px;background:linear-gradient(90deg,#ffb703 0%,#e65c00 50%,#b33600 100%);"></td></tr>
+          <!-- Body -->
           <tr>
-            <td style="padding:28px 32px 8px;">
-              <h1 style="margin:0 0 16px;font-size:19px;color:#1f2937;font-weight:800;">${title}</h1>
-              <div style="font-size:15px;line-height:1.7;color:#1f2937;">${bodyHtml}</div>
+            <td style="padding:34px 32px 10px;">
+              <h1 style="margin:0 0 18px;font-size:21px;line-height:1.4;color:#2c1a0e;font-weight:800;">${title}</h1>
+              <div style="font-size:16px;line-height:1.8;color:#3a281a;">${bodyHtml}</div>
             </td>
           </tr>
+          ${qrImage}
+          ${ctaButton}
+          <!-- Footer -->
           <tr>
-            <td style="padding:20px 32px;background:#f7f6fd;border-top:1px solid #e6e3f5;text-align:center;">
-              <div style="font-size:12px;color:#6b7280;">યુવા સંગમ ૨૦૨૬ • રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ</div>
+            <td style="padding:22px 32px;background:#fff8f0;border-top:1px solid #f3ddc4;text-align:center;">
+              <div style="font-size:13px;color:#7a6552;font-weight:600;margin-bottom:4px;">યુવા સંગમ ૨૦૨૬ • રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ</div>
+              <div style="font-size:11px;color:#a08a72;">🚩 સેવા &nbsp;|&nbsp; 🪷 સંસ્કાર &nbsp;|&nbsp; ☀️ સંગઠન</div>
             </td>
           </tr>
         </table>
