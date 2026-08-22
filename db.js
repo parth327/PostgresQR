@@ -67,6 +67,15 @@ async function init() {
       CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
     `);
 
+    // New event fields — event time + two contact persons (added for the
+    // event form + registration-page "Event Details" section). Safe to run
+    // every startup.
+    await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS event_time TEXT;`);
+    await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact1_name TEXT;`);
+    await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact1_mobile TEXT;`);
+    await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact2_name TEXT;`);
+    await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact2_mobile TEXT;`);
+
     // Event Attendance table (new)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS event_attendance (
@@ -277,11 +286,40 @@ async function getUsersNotCheckedIn(eventId) {
 async function createEvent(event) {
   const id = crypto.randomUUID();
   await pool.query(
-    `INSERT INTO events (id, event_name, event_date, event_description, location, max_capacity, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, event.name, event.date, event.description, event.location, event.maxCapacity, 'upcoming']
+    `INSERT INTO events
+      (id, event_name, event_date, event_time, event_description, location, max_capacity,
+       contact1_name, contact1_mobile, contact2_name, contact2_mobile, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [
+      id,
+      event.name,
+      event.date,
+      event.time || null,
+      event.description,
+      event.location,
+      event.maxCapacity,
+      event.contact1Name || null,
+      event.contact1Mobile || null,
+      event.contact2Name || null,
+      event.contact2Mobile || null,
+      'upcoming',
+    ]
   );
   return id;
+}
+
+// Nearest event that hasn't already happened (by date, and by time if it's
+// today) — used to populate the "Event Details" section on the public
+// registration page. Falls back to null when nothing is scheduled.
+async function getUpcomingEvent() {
+  const { rows } = await pool.query(
+    `SELECT * FROM events
+     WHERE (status IS NULL OR status != 'completed')
+       AND event_date >= CURRENT_DATE - INTERVAL '1 day'
+     ORDER BY event_date ASC, event_time ASC NULLS LAST
+     LIMIT 1`
+  );
+  return rows[0] || null;
 }
 
 async function getAllEvents() {
@@ -317,6 +355,37 @@ async function getEventByDate(date) {
     [date]
   );
   return rows[0] || null;
+}
+
+async function updateEvent(eventId, event) {
+  await pool.query(
+    `UPDATE events SET
+       event_name = $1,
+       event_date = $2,
+       event_time = $3,
+       event_description = $4,
+       location = $5,
+       max_capacity = $6,
+       contact1_name = $7,
+       contact1_mobile = $8,
+       contact2_name = $9,
+       contact2_mobile = $10,
+       updated_at = NOW()
+     WHERE id = $11`,
+    [
+      event.name,
+      event.date,
+      event.time || null,
+      event.description,
+      event.location,
+      event.maxCapacity,
+      event.contact1Name || null,
+      event.contact1Mobile || null,
+      event.contact2Name || null,
+      event.contact2Mobile || null,
+      eventId,
+    ]
+  );
 }
 
 async function updateEventStatus(eventId, status) {
@@ -570,6 +639,8 @@ module.exports = {
   getAllEventsWithAttendanceCounts,
   getEventById,
   getEventByDate,
+  getUpcomingEvent,
+  updateEvent,
   updateEventStatus,
   deleteEvent,
   // Attendance functions
