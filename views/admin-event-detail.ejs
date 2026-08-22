@@ -17,8 +17,18 @@
 
   <div class="info-card">
     <p><strong>📅 તારીખ:</strong> <%= formatEventDateGu(event.event_date) %></p>
+    <% if (event.event_time) { %>
+      <p><strong>🕒 સમય:</strong> <%= event.event_time %></p>
+    <% } %>
     <% if (event.location) { %>
       <p><strong>📍 સ્થળ:</strong> <%= event.location %></p>
+    <% } %>
+    <% if (event.contact1_name || event.contact2_name) { %>
+      <p><strong>📞 સંપર્ક વ્યક્તિ:</strong>
+        <% if (event.contact1_name) { %><%= event.contact1_name %><%= event.contact1_mobile ? ' — ' + event.contact1_mobile : '' %><% } %>
+        <% if (event.contact1_name && event.contact2_name) { %> &nbsp;|&nbsp; <% } %>
+        <% if (event.contact2_name) { %><%= event.contact2_name %><%= event.contact2_mobile ? ' — ' + event.contact2_mobile : '' %><% } %>
+      </p>
     <% } %>
     <p>
       <strong>સ્થિતિ:</strong>
@@ -99,6 +109,7 @@
     <h2 style="margin:0;">✓ હાજરી યાદી (<%= attendance.length %>)</h2>
     <div class="actions-row" style="margin:0;">
       <% if (adminRole === 'main') { %>
+        <a href="/admin/events/<%= event.id %>/edit" class="btn btn-secondary">✏️ ફેરફાર કરો</a>
         <a href="/admin/events/<%= event.id %>/email" class="btn">📧 ઇમેલ મોકલો</a>
       <% } %>
       <% if (attendance.length > 0) { %>
