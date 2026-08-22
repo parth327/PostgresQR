@@ -146,6 +146,63 @@
 </section>
 
 <!-- ===================================================================
+     All Event Details (dynamic) — all events from the database shown as
+     compact cards between the youngsters image and the registration form.
+     =================================================================== -->
+<% if (typeof events !== 'undefined' && events && events.length > 0) { %>
+<section class="ys-event-details-section ys-reveal" id="ys-event-details">
+
+  <div class="all-events-grid">
+  <% events.forEach(function(ev, idx) {
+       var evDateISO = ev.event_date
+         ? (ev.event_date instanceof Date ? ev.event_date.toISOString().split('T')[0] : String(ev.event_date).split('T')[0])
+         : '';
+  %>
+    <div class="event-mini-card">
+      <div class="event-mini-header">
+        <span class="event-mini-badge status-<%= ev.status %>">
+          <%= ev.status === 'upcoming' ? 'આગામી' : ev.status === 'ongoing' ? 'ચાલુ' : ev.status === 'completed' ? 'પૂર્ણ' : (ev.status || 'આગામી') %>
+        </span>
+        <h3 class="event-mini-name"><%= ev.event_name %></h3>
+      </div>
+      <div class="event-mini-rows">
+        <div class="event-mini-row">
+          <span class="event-mini-icon">📅</span>
+          <span><%= formatEventDateGu(ev.event_date) %><% if (ev.event_time) { %> &nbsp;•&nbsp; 🕒 <%= ev.event_time %><% } %></span>
+        </div>
+        <% if (ev.location) { %>
+        <div class="event-mini-row">
+          <span class="event-mini-icon">📍</span>
+          <span><%= ev.location %></span>
+        </div>
+        <% } %>
+        <% if (ev.contact1_name || ev.contact2_name) { %>
+        <div class="event-mini-row">
+          <span class="event-mini-icon">📞</span>
+          <span>
+            <% if (ev.contact1_name) { %><%= ev.contact1_name %><% if (ev.contact1_mobile) { %> — <a href="tel:<%= ev.contact1_mobile %>"><%= ev.contact1_mobile %></a><% } %><% } %>
+            <% if (ev.contact1_name && ev.contact2_name) { %> &nbsp;|&nbsp; <% } %>
+            <% if (ev.contact2_name) { %><%= ev.contact2_name %><% if (ev.contact2_mobile) { %> — <a href="tel:<%= ev.contact2_mobile %>"><%= ev.contact2_mobile %></a><% } %><% } %>
+          </span>
+        </div>
+        <% } %>
+      </div>
+      <% if (idx === 0 && evDateISO) { %>
+      <div class="event-mini-countdown" id="ysCountdown" data-target-date="<%= evDateISO %>" data-target-time="<%= ev.event_time || '00:00' %>">
+        <div class="cdb"><span class="cdn" id="cdDays">00</span><span class="cdl">દિવસ</span></div>
+        <div class="cdb"><span class="cdn" id="cdHours">00</span><span class="cdl">કલાક</span></div>
+        <div class="cdb"><span class="cdn" id="cdMins">00</span><span class="cdl">મિ.</span></div>
+        <div class="cdb"><span class="cdn" id="cdSecs">00</span><span class="cdl">સે.</span></div>
+      </div>
+      <% } %>
+    </div>
+  <% }); %>
+  </div>
+
+</section>
+<% } %>
+
+<!-- ===================================================================
      Existing registration form (unchanged below — now appears after the
      landing content above; only data-i18n attributes were added to its
      text so the language switch can translate it too).
@@ -154,7 +211,6 @@
 <div class="container">
   <div class="card fade-in-up">
     <div class="form-hero">
-      <img src="/css/bharat-mata-bg.jpg" alt="Bharat Mata" class="hero-portrait" />
       <h2 class="hero-badge" data-i18n="reg-heading-badge">🕉️ રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ 🕉️</h2>
       <h1 data-i18n="reg-heading-title">યુવા સંગમ ૨૦૨૬</h1>
       <p class="subtitle" data-i18n="reg-heading-subtitle">નમસ્તે મિત્રો, યુવા સંગમમાં જોડાવા માટે નીચે આપેલ માહિતી ભરશો!!!</p>
@@ -315,7 +371,7 @@
       </div>
 
       <div class="actions-row">
-        <button type="submit" class="btn btn-block btn-glow" id="submitBtn" disabled>
+        <button type="submit" class="btn btn-block btn-glow" id="submitBtn">
           <span class="btn-text" data-i18n="btn-submit">ક્લિક કરો અને તમારો ક્યુઆર કોડ જનરેટ કરો</span>
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
@@ -336,9 +392,74 @@
   <p class="ys-copyright" data-i18n="footer-copyright">© ૨૦૨૬ યુવા સંગમ. રાષ્ટ્ર સેવામાં સમર્પિત.</p>
 </footer>
 
+<!-- Audio: only on register page -->
+<audio id="ambient-audio" autoplay preload="auto" loop>
+  <source src="/audio/bg-music.mp3" type="audio/mpeg">
+</audio>
+<div class="audio-control" id="audio-toggle" title="સંગીત ચાલુ/બંધ કરો">
+  <svg class="volume-on" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+  <svg class="volume-off hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12A4.5 4.5 0 0014 7.97v1.79l2.48 2.48c.01-.08.02-.16.02-.24zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+</div>
+<script>
+  // Initialise audio toggle for register page
+  (function () {
+    var audio = document.getElementById('ambient-audio');
+    var toggle = document.getElementById('audio-toggle');
+    if (!audio || !toggle) return;
+    var on = toggle.querySelector('.volume-on');
+    var off = toggle.querySelector('.volume-off');
+    // Browsers block autoplay — try to play immediately, show correct icon state
+    function setIcon(playing) {
+      if (playing) { on.classList.remove('hidden'); off.classList.add('hidden'); }
+      else { on.classList.add('hidden'); off.classList.remove('hidden'); }
+    }
+    audio.play().then(function () { setIcon(true); }).catch(function () { setIcon(false); });
+    toggle.addEventListener('click', function () {
+      if (audio.paused) { audio.play(); setIcon(true); }
+      else { audio.pause(); setIcon(false); }
+    });
+  })();
+</script>
+
 <script src="/js/i18n.js"></script>
 
 <script>
+  // Live countdown for the "Event Details" card — target is the event's
+  // date + time, always interpreted as India Standard Time (+05:30),
+  // regardless of the visitor's own timezone.
+  (function () {
+    var el = document.getElementById('ysCountdown');
+    if (!el) return;
+
+    var dateStr = el.getAttribute('data-target-date');
+    var timeStr = el.getAttribute('data-target-time') || '00:00';
+    if (!dateStr) return;
+
+    var target = new Date(dateStr + 'T' + timeStr + ':00+05:30');
+    var dEl = document.getElementById('cdDays');
+    var hEl = document.getElementById('cdHours');
+    var mEl = document.getElementById('cdMins');
+    var sEl = document.getElementById('cdSecs');
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tick() {
+      var diff = target.getTime() - Date.now();
+      if (diff < 0) diff = 0;
+      var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      var mins = Math.floor((diff / (1000 * 60)) % 60);
+      var secs = Math.floor((diff / 1000) % 60);
+      dEl.textContent = pad(days);
+      hEl.textContent = pad(hours);
+      mEl.textContent = pad(mins);
+      sEl.textContent = pad(secs);
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  })();
+
   (function () {
     var form = document.getElementById('regForm');
     var btn = document.getElementById('submitBtn');
@@ -352,6 +473,12 @@
     var location = document.getElementById('f-location');
     var locationOtherWrap = document.getElementById('locationOtherWrap');
     var locationOtherInput = document.getElementById('f-locationOther');
+
+    // Validation error message element (created once)
+    var validationBanner = document.createElement('div');
+    validationBanner.className = 'alert alert-error shake';
+    validationBanner.style.display = 'none';
+    form.insertBefore(validationBanner, form.firstChild);
 
     function syncConditional(select, wrap, input) {
       var isOther = select.value === 'અન્ય';
@@ -367,20 +494,12 @@
       updateProgress();
     }
 
-    function syncOther() {
-      syncConditional(joinMedium, otherWrap, otherInput);
-    }
+    function syncOther() { syncConditional(joinMedium, otherWrap, otherInput); }
+    function syncLocationOther() { syncConditional(location, locationOtherWrap, locationOtherInput); }
 
-    function syncLocationOther() {
-      syncConditional(location, locationOtherWrap, locationOtherInput);
-    }
-
-    // Required, currently-visible fields we track for the progress bar / validity
     function requiredFields() {
       var fields = Array.prototype.slice.call(form.querySelectorAll('[required]'));
-      return fields.filter(function (el) {
-        return el.offsetParent !== null; // ignore required fields hidden in a collapsed section
-      });
+      return fields.filter(function (el) { return el.offsetParent !== null; });
     }
 
     function fieldIsValid(el) {
@@ -391,10 +510,19 @@
         var max = el.max ? parseInt(el.max, 10) : Infinity;
         return el.value !== '' && !isNaN(v) && v >= min && v <= max;
       }
+      if (el.type === 'email') {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim());
+      }
       if (el.pattern) {
         return new RegExp('^(?:' + el.pattern + ')$').test(el.value);
       }
       return el.value.trim().length > 0;
+    }
+
+    function fieldLabel(el) {
+      var label = form.querySelector('label[for="' + el.id + '"]');
+      if (label) return label.innerText.replace('*', '').trim().replace(/^[^\w\u0A80-\u0AFF]+/, '');
+      return el.name || el.id;
     }
 
     function updateProgress() {
@@ -404,7 +532,7 @@
       progressFill.style.width = pct + '%';
       var pctSuffix = document.documentElement.getAttribute('lang') === 'en' ? '% Complete' : '% પૂર્ણ';
       progressLabel.textContent = pct + pctSuffix;
-      btn.disabled = pct < 100;
+      // Button always enabled — validation shown on click
     }
 
     function attachHint(el) {
@@ -415,11 +543,9 @@
       el.addEventListener('blur', function () {
         if (!el.hasAttribute('required') && el.value.trim() === '') return;
         if (fieldIsValid(el)) {
-          el.classList.add('field-ok');
-          el.classList.remove('field-error');
+          el.classList.add('field-ok'); el.classList.remove('field-error');
         } else {
-          el.classList.add('field-error');
-          el.classList.remove('field-ok');
+          el.classList.add('field-error'); el.classList.remove('field-ok');
         }
       });
     }
@@ -433,16 +559,29 @@
     updateProgress();
 
     form.addEventListener('submit', function (e) {
-      if (!form.checkValidity()) {
+      // Mark all invalid required fields
+      var fields = requiredFields();
+      var invalid = fields.filter(function (el) { return !fieldIsValid(el); });
+
+      if (invalid.length > 0) {
         e.preventDefault();
-        var firstInvalid = form.querySelector(':invalid');
-        if (firstInvalid) {
-          firstInvalid.classList.add('field-error');
-          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          firstInvalid.focus();
-        }
+        // Mark each invalid field
+        invalid.forEach(function (el) {
+          el.classList.add('field-error');
+          el.classList.remove('field-ok');
+        });
+        // Show banner with list of missing fields
+        var names = invalid.map(function (el) { return fieldLabel(el); }).filter(Boolean);
+        validationBanner.innerHTML = '⚠️ કૃપા કરીને આ ફિલ્ડ ભરો: <strong>' + names.join(', ') + '</strong>';
+        validationBanner.style.display = '';
+        // Scroll to first invalid field
+        invalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        invalid[0].focus();
         return;
       }
+
+      // All valid — hide banner and submit
+      validationBanner.style.display = 'none';
       btn.classList.add('loading');
       btn.disabled = true;
     });
