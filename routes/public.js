@@ -30,15 +30,21 @@ router.get('/', (req, res) => {
 });
 
 // GET /register -> show the public registration form (no login required)
-router.get('/register', (req, res) => {
-  res.render('register', { error: null, formData: {} });
+router.get('/register', async (req, res, next) => {
+  try {
+    const events = await db.getAllEvents();
+    res.render('register', { error: null, formData: {}, events });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // POST /register -> save details + generate unique QR code
 router.post('/register', (req, res) => {
   upload.single('photo')(req, res, async (err) => {
     if (err) {
-      return res.render('register', { error: err.message, formData: req.body });
+      const events = await db.getAllEvents().catch(() => []);
+      return res.render('register', { error: err.message, formData: req.body, events });
     }
 
     try {
@@ -65,9 +71,11 @@ router.post('/register', (req, res) => {
       if (!age || Number.isNaN(ageNum) || ageNum < 15 || ageNum > 100) missing.push('ઉંમર (15-100)');
 
       if (missing.length) {
+        const events = await db.getAllEvents().catch(() => []);
         return res.render('register', {
           error: `કૃપા કરીને આ ફિલ્ડ ભરો: ${missing.join(', ')}`,
           formData: req.body,
+          events,
         });
       }
 
