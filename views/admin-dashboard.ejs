@@ -33,6 +33,9 @@
   <a href="/admin/events" class="btn">
     📋 <%= adminRole === 'main' ? 'ઇવેન્ટ્સ મેનેજ કરો' : 'મારો ઇવેન્ટ' %>
   </a>
+  <% if (adminRole === 'main') { %>
+    <a href="/admin/custom-email" class="btn btn-secondary">✉️ કસ્ટમ ઈમેલ મોકલો</a>
+  <% } %>
 </div>
 
   <form class="search-bar" method="GET" action="/admin/dashboard">
@@ -141,7 +144,10 @@
             <tr>
               <td>
                 <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">જુઓ</a>
-                <a href="<%= r.qrUrl %>" download class="btn btn-secondary btn-sm">QR</a>
+
+                <% if (adminRole === 'main' && r.email) { %>
+                  <a href="/admin/custom-email?to=<%= encodeURIComponent(r.email) %>&name=<%= encodeURIComponent(r.name) %>" class="btn btn-secondary btn-sm">✉ ઈમેલ</a>
+                <% } %>
                 <% if (adminRole === 'main') { %>
                 <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
                       onsubmit="return confirm('આ રેકોર્ડ કાયમ માટે ડિલીટ કરવો છે?');">
