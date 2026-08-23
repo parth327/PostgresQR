@@ -48,9 +48,14 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 8, // 8 hours
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
     },
   })
 );
+
+// Trust the first proxy (required on Render/Heroku for secure cookies & correct IP)
+app.set('trust proxy', 1);
 
 // Routes
 app.use('/', publicRoutes);
