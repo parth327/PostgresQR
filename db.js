@@ -32,7 +32,7 @@ async function init() {
         photo_mime TEXT,
         qr_data TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        pincode TEXT NOT NULL
+        pincode TEXT
       );
     `);
 
@@ -205,7 +205,7 @@ async function addRecord(record) {
       record.photoMime || null,
       record.qrData,
       record.createdAt,
-      record.pincode,
+      record.pincode || null,
     ]
   );
   return record;
