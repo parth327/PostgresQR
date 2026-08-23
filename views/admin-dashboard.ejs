@@ -34,7 +34,8 @@
     📋 <%= adminRole === 'main' ? 'ઇવેન્ટ્સ મેનેજ કરો' : 'મારો ઇવેન્ટ' %>
   </a>
   <% if (adminRole === 'main') { %>
-    <a href="/admin/custom-email" class="btn btn-secondary">✉️ કસ્ટમ ઈમેલ મોકલો</a>
+    <a href="/admin/custom-email" class="btn btn-secondary">✉️ કસ્ટમ ઈમેલ</a>
+    <a href="/admin/send-qr-all" class="btn btn-secondary" style="background:linear-gradient(135deg,#ff8a00,#e65c00);color:#fff;border:none;">📧 QR Bulk Email</a>
   <% } %>
 </div>
 
@@ -147,6 +148,7 @@
 
                 <% if (adminRole === 'main' && r.email) { %>
                   <a href="/admin/custom-email?to=<%= encodeURIComponent(r.email) %>&name=<%= encodeURIComponent(r.name) %>" class="btn btn-secondary btn-sm">✉ ઈમેલ</a>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="sendQr(this,'<%= r.id %>','<%= r.name.replace(/'/g,\"\\\\'\" ) %>')" title="QR Email Resend">📧 QR</button>
                 <% } %>
                 <% if (adminRole === 'main') { %>
                 <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
@@ -177,5 +179,43 @@
   <% } %>
   <p class="small-note">આ નોંધણી લિંક વપરાશકર્તાઓ સાથે શેર કરો: <strong><%= baseUrl %>/register</strong></p>
 </div>
+
+<!-- Toast notification -->
+<div id="qr-toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#2c1a0e;color:#fff;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.3);max-width:320px;transition:opacity 0.3s;"></div>
+
+<script>
+function showToast(msg, ok) {
+  var t = document.getElementById('qr-toast');
+  t.textContent = msg;
+  t.style.background = ok ? '#1a6b3a' : '#8b2000';
+  t.style.display = 'block';
+  t.style.opacity = '1';
+  setTimeout(function() {
+    t.style.opacity = '0';
+    setTimeout(function(){ t.style.display='none'; }, 300);
+  }, 4000);
+}
+
+function sendQr(btn, id, name) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  fetch('/admin/send-qr/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = '📧 QR';
+      if (data.success) {
+        showToast('✅ QR Email sent: ' + name, true);
+      } else {
+        showToast('❌ Failed: ' + (data.error || 'Unknown error'), false);
+      }
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = '📧 QR';
+      showToast('❌ Network error', false);
+    });
+}
+</script>
 
 <%- include('partials/footer') %>
