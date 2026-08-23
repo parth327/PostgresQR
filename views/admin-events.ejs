@@ -2,6 +2,9 @@
 <%- include('partials/header') %>
 
 <div class="wide-container fade-in-up">
+  <% if (typeof query !== 'undefined' && query && query.deleted) { %>
+    <div class="alert alert-success" style="margin-bottom:16px;">✅ ઇવેન્ટ સફળતાપૂર્વક ડિલીટ કરવામાં આવ્યો.</div>
+  <% } %>
   <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
     <div>
       <h1 style="margin-bottom:4px;">ઇવેન્ટ્સ</h1>
@@ -9,9 +12,6 @@
     </div>
     <div class="actions-row" style="margin:0;">
   <% if (adminRole === 'main') { %>
-    <% if (typeof query !== 'undefined' && query && query.deleted) { %>
-      <div class="alert alert-success" style="margin-bottom:16px;">✅ ઇવેન્ટ સફળતાપૂર્વક ડિલીટ કરવામાં આવ્યો.</div>
-    <% } %>
     <a href="/admin/events/export" class="btn btn-secondary">⬇ એક્સેલમાં એક્સપોર્ટ કરો</a>
     <a href="/admin/events/create" class="btn btn-glow">+ નવો ઇવેન્ટ</a>
   <% } %>
@@ -45,7 +45,7 @@
             <% } %>
           </div>
           <span class="status-badge status-<%= event.status %>">
-            <%= event.status === 'upcoming' ? 'આગામી' : event.status === 'ongoing' ? 'ચાલુ છે' : event.status === 'completed' ? 'પૂર્ણ' : event.status.toUpperCase() %>
+            <%= event.status === 'upcoming' ? 'આગામી' : event.status === 'ongoing' ? 'ચાલુ છે' : event.status === 'completed' ? 'પૂર્ણ' : (event.status || 'આગામી').toUpperCase() %>
           </span>
         </div>
         <div class="event-actions">
