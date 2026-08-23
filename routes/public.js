@@ -69,6 +69,8 @@ router.post('/register', (req, res) => {
 
       const ageNum = age ? parseInt(age, 10) : null;
       if (!age || Number.isNaN(ageNum) || ageNum < 15 || ageNum > 100) missing.push('ઉંમર (15-100)');
+      if (!pincode || !pincode.trim()) missing.push('પિનકોડ');
+      else if (!/^\d{6}$/.test(pincode.trim())) missing.push('યોગ્ય 6-અંકી પિનકોડ');
 
       if (missing.length) {
         const events = await db.getAllEvents().catch(() => []);
@@ -110,7 +112,7 @@ router.post('/register', (req, res) => {
         photoMime: req.file ? req.file.mimetype : null,
         qrData: qrBuffer.toString('base64'),
         createdAt,
-        pincode : pincode,
+        pincode: (pincode || '').trim() || null,
       };
 
       await db.addRecord(record);
