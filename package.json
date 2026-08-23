@@ -2,7 +2,32 @@
   "name": "qr-registration-app",
   "version": "1.0.0",
   "description": "User registration form with auto-generated QR code + admin panel",
+  "main": "server.js{
+  "name": "qr-registration-app",
+  "version": "1.0.0",
+  "description": "User registration form with auto-generated QR code + admin panel",
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "create-admin": "node utils/create-admin.js",
+    "test-email": "node utils/test-email.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "exceljs": "^3.4.0",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.5",
+    "pg": "^8.11.5",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
+
   "scripts": {
     "start": "node server.js",
     "create-admin": "node utils/create-admin.js",
