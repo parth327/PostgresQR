@@ -25,9 +25,19 @@
       <div class="lbl">કુલ નોંધાયેલા વપરાશકર્તાઓ</div>
     </div>
     <div class="stat-card" style="--d:2; animation-delay:0.12s;">
-      <div class="num"><%= records.length %></div>
+      <div class="num"><%= filteredTotal %></div>
       <div class="lbl">બતાવેલા (ફિલ્ટર થયેલા)</div>
     </div>
+    <% if (adminRole === 'main' && todayCheckins !== null) { %>
+      <div class="stat-card" style="--d:3; animation-delay:0.18s;">
+        <div class="num"><%= todayCheckins %></div>
+        <div class="lbl">આજે ચેક-ઇન (બધા ઇવેન્ટ)</div>
+      </div>
+      <div class="stat-card" style="--d:4; animation-delay:0.24s;">
+        <div class="num"><%= upcomingEventsCount %></div>
+        <div class="lbl">આગામી ઇવેન્ટ્સ</div>
+      </div>
+    <% } %>
   </div>
 <div style="margin: 1.5rem 0 2rem; text-align: center;">
   <a href="/admin/events" class="btn">
@@ -145,6 +155,9 @@
             <tr>
               <td>
                 <a href="/admin/record/<%= r.id %>" class="btn btn-secondary btn-sm">જુઓ</a>
+                <% if (adminRole === 'main') { %>
+                  <a href="/admin/record/<%= r.id %>/edit" class="btn btn-secondary btn-sm">✏ સંપાદિત</a>
+                <% } %>
 
                 <% if (adminRole === 'main' && r.email) { %>
                   <a href="/admin/custom-email?to=<%= encodeURIComponent(r.email) %>&name=<%= encodeURIComponent(r.name) %>" class="btn btn-secondary btn-sm">✉ ઈમેલ</a>
@@ -163,8 +176,8 @@
               <td><img src="<%= r.qrUrl %>" class="mini-qr" alt="qr" /></td>
               <td data-label="નામ"><%= r.name %></td>
               <td data-label="ઉંમર"><%= r.age || '-' %></td>
-              <td data-label="ફોન"><%= r.phone %></td>
-              <td data-label="વોટ્સએપ"><%= r.whatsapp || '-' %></td>
+              <td data-label="ફોન"><% if (r.phone) { %><a href="tel:<%= r.phone %>" class="tel-link"><%= r.phone %></a><% } else { %>-<% } %></td>
+              <td data-label="વોટ્સએપ"><% if (r.whatsapp) { %><a href="https://wa.me/91<%= r.whatsapp.replace(/\D/g,'') %>" target="_blank" rel="noopener" class="tel-link">📱 <%= r.whatsapp %></a><% } else { %>-<% } %></td>
               <td data-label="એરિયા"><%= r.location === 'અન્ય' ? (r.locationOther || r.location) : r.location %></td>
               <td data-label="પિનકોડ"><%= r.pincode %></td>
               <td data-label="ઘર નંબર"><%= r.houseNumber || '-' %></td>
@@ -179,6 +192,30 @@
         </tbody>
       </table>
     </div>
+
+    <% if (totalPages > 1) {
+      function pageLink(p) { return '/admin/dashboard?' + filterQuery + '&page=' + p; }
+    %>
+    <div class="pagination">
+      <% if (page > 1) { %>
+        <a href="<%= pageLink(page - 1) %>">← પાછળ</a>
+      <% } else { %>
+        <span class="disabled">← પાછળ</span>
+      <% } %>
+      <% var startP = Math.max(1, page - 2), endP = Math.min(totalPages, page + 2); %>
+      <% if (startP > 1) { %><a href="<%= pageLink(1) %>">1</a><% if (startP > 2) { %><span>…</span><% } %><% } %>
+      <% for (var p = startP; p <= endP; p++) { %>
+        <% if (p === page) { %><span class="current"><%= p %></span><% } else { %><a href="<%= pageLink(p) %>"><%= p %></a><% } %>
+      <% } %>
+      <% if (endP < totalPages) { %><% if (endP < totalPages - 1) { %><span>…</span><% } %><a href="<%= pageLink(totalPages) %>"><%= totalPages %></a><% } %>
+      <% if (page < totalPages) { %>
+        <a href="<%= pageLink(page + 1) %>">આગળ →</a>
+      <% } else { %>
+        <span class="disabled">આગળ →</span>
+      <% } %>
+    </div>
+    <p class="pagination-info">પાનું <%= page %> / <%= totalPages %> — કુલ <%= filteredTotal %> રેકોર્ડમાંથી <%= records.length %> બતાવ્યા</p>
+    <% } %>
   <% } %>
   <p class="small-note">આ નોંધણી લિંક વપરાશકર્તાઓ સાથે શેર કરો: <strong><%= baseUrl %>/register</strong></p>
 </div>
