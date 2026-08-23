@@ -887,8 +887,7 @@ router.post('/send-qr-all', requireMainAdmin, async (req, res, next) => {
       try {
         const qrBuffer = await db.getQr(record.id);
         if (!qrBuffer) { skipped++; continue; }
-        const viewUrl = `${config.baseUrl}/view/${record.id}`;
-        const outcome = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer, viewUrl });
+        const outcome = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer });
         if (outcome.success) sent++;
         else if (outcome.skipped) skipped++;
         else { failed++; errors.push(`${record.name}: ${outcome.error}`); }
@@ -952,8 +951,7 @@ router.post('/send-qr/:id', requireMainAdmin, async (req, res, next) => {
     const qrBuffer = await db.getQr(req.params.id);
     if (!qrBuffer) return res.json({ success: false, error: 'QR code not found for this user.' });
 
-    const viewUrl = `${config.baseUrl}/view/${record.id}`;
-    const result = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer, viewUrl });
+    const result = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer });
 
     if (result.success) {
       return res.json({ success: true, message: `QR sent to ${record.email}` });
