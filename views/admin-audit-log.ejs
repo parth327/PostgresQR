@@ -1,0 +1,50 @@
+<% var pageTitle = 'ઓડિટ લોગ - એડમિન'; var isAdmin = true; %>
+<%- include('partials/header') %>
+
+<div class="wide-container fade-in-up">
+  <h1>🛡️ ઓડિટ લોગ</h1>
+  <p class="subtitle">છેલ્લી <%= entries.length %> સંવેદનશીલ ક્રિયાઓ — રેકોર્ડ સંપાદન/ડિલીટ, ઇવેન્ટ ફેરફારો, ઇવેન્ટ એડમિન મેનેજમેન્ટ.</p>
+
+  <% if (entries.length === 0) { %>
+    <div class="empty-state card">
+      <p>હજુ સુધી કોઈ ક્રિયા નોંધાયેલી નથી.</p>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>સમય</th>
+            <th>એડમિન</th>
+            <th>ક્રિયા</th>
+            <th>પ્રકાર</th>
+            <th>વિગત</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% entries.forEach(function(e) { %>
+            <tr>
+              <td data-label="સમય"><%= formatDateTimeGu(e.created_at) %></td>
+              <td data-label="એડમિન"><%= e.admin_username %> <span class="badge"><%= e.admin_role === 'main' ? 'મુખ્ય' : 'ઇવેન્ટ' %></span></td>
+              <td data-label="ક્રિયા">
+                <%
+                  var actionLabels = {
+                    create: '➕ બનાવ્યું', edit: '✏️ સંપાદિત', delete: '🗑️ ડિલીટ',
+                    password_reset: '🔑 પાસવર્ડ રિસેટ', reassign: '🔁 ફેરવ્યું',
+                  };
+                %>
+                <span class="status-badge <%= e.action === 'delete' ? 'status-completed' : (e.action === 'create' ? 'status-ongoing' : 'status-upcoming') %>">
+                  <%= actionLabels[e.action] || e.action %>
+                </span>
+              </td>
+              <td data-label="પ્રકાર"><%= e.entity_type %></td>
+              <td data-label="વિગત"><%= e.details || '-' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
