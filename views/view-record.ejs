@@ -12,6 +12,17 @@
       <div>
         <h2><%= record.name %></h2>
         <p><%= record.occupation || 'નોંધાયેલ વપરાશકર્તા' %></p>
+        <% if (record.phone || record.whatsapp) { %>
+          <div class="quick-contact" style="margin-top:8px;">
+            <% if (record.phone) { %>
+              <a href="tel:<%= record.phone %>" class="call-link">📞 કૉલ કરો</a>
+            <% } %>
+            <% var waNumber = (record.whatsapp || record.phone || '').replace(/\D/g, ''); %>
+            <% if (waNumber) { %>
+              <a href="https://wa.me/91<%= waNumber %>" target="_blank" rel="noopener" class="whatsapp-link">💬 WhatsApp</a>
+            <% } %>
+          </div>
+        <% } %>
       </div>
     </div>
 
@@ -73,6 +84,9 @@
           <button type="button" id="send-qr-btn" class="btn btn-secondary" onclick="sendQrEmail()">📧 QR Email મોકલો</button>
         <% } %>
         <a href="/admin/dashboard" class="btn btn-secondary">← ડેશબોર્ડ</a>
+        <% if (typeof adminRole !== 'undefined' && adminRole === 'main') { %>
+          <a href="/admin/record/<%= record.id %>/edit" class="btn btn-secondary">✏️ ફેરફાર કરો</a>
+        <% } %>
         <% if (typeof adminRole !== 'undefined' && adminRole === 'main') { %>
           <form action="/admin/delete/<%= record.id %>" method="POST" style="display:inline;"
                 onsubmit="return confirm('આ રેકોર્ડ કાયમ માટે ડિલીટ કરવો છે?');">
