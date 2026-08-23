@@ -28,12 +28,16 @@
 
 <div class="topbar">
   <a href="/register" class="brand"><span class="brand-dot"></span>યુવા સંગમ ૨૦૨૬ (રાષ્ટ્રીય સ્વયંસેવક સંઘ - નરોડા ભાગ)</a>
-  <nav>
+  <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="મેનૂ ખોલો" aria-expanded="false">☰</button>
+  <% } %>
+  <nav id="topbarNav" class="<%= (typeof isAdmin !== 'undefined' && isAdmin) ? 'has-toggle' : '' %>">
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
       <a href="/admin/dashboard">ડેશબોર્ડ</a>
       <% if (typeof adminRole !== 'undefined' && adminRole === 'main') { %>
         <a href="/admin/events">ઇવેન્ટ્સ</a>
         <a href="/admin/event-admins">ઇવેન્ટ એડમિન</a>
+        <a href="/admin/audit-log">ઓડિટ લોગ</a>
       <% } else { %>
         <a href="/admin/events">મારો ઇવેન્ટ</a>
       <% } %>
@@ -46,3 +50,23 @@
     <% } %>
   </nav>
 </div>
+<script>
+  (function () {
+    var toggle = document.getElementById('navToggle');
+    var nav = document.getElementById('topbarNav');
+    if (!toggle || !nav) return;
+    toggle.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.textContent = open ? '✕' : '☰';
+    });
+    // Close the menu automatically once a link/button inside it is used.
+    nav.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+        nav.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = '☰';
+      }
+    });
+  })();
+</script>
