@@ -6,7 +6,7 @@
   <% if (!event) { %>
     <div class="empty-state card">
       <h2 style="margin-top:0;">📋 કોઈ ઇવેન્ટ મળ્યો નહીં</h2>
-      <p><%= error %></p>
+      <p><%= typeof error !== 'undefined' ? error : 'ઇવેન્ટ મળ્યો નહીં.' %></p>
       <a href="/admin/events" class="btn">ઇવેન્ટ્સ પર જાઓ</a>
     </div>
   <% } else { %>
