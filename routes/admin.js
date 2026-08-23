@@ -1012,7 +1012,7 @@ router.post('/api/checkin', requireAdmin, requireEventAccess, async (req, res, n
     const { recordId, eventId } = req.body;
 
     if (!recordId) {
-      return res.json({ success: false, error: 'User ID required' });
+      return res.json({ success: false, status: 'invalid', error: 'વપરાશકર્તા ID જરૂરી છે' });
     }
 
     // Get event (use provided eventId or today's event)
@@ -1025,22 +1025,32 @@ router.post('/api/checkin', requireAdmin, requireEventAccess, async (req, res, n
     }
 
     if (!event) {
-      return res.json({ success: false, error: 'No active event found' });
+      return res.json({ success: false, status: 'invalid', error: 'કોઈ સક્રિય ઇવેન્ટ મળ્યો નહીં' });
     }
 
     // Get user record
     const record = await db.getRecordById(recordId);
     if (!record) {
-      return res.json({ success: false, error: 'User record not found' });
+      return res.json({
+        success: false,
+        status: 'invalid',
+        error: 'અમાન્ય QR કોડ — આ યુઝર રેકોર્ડ મળ્યો નહીં',
+      });
     }
+
+    const photoUrl = record.hasPhoto ? `/photo/${record.id}` : null;
 
     // Check if already checked in
     const alreadyCheckedIn = await db.isUserCheckedIn(event.id, recordId);
     if (alreadyCheckedIn) {
+      const checkinInfo = await db.getCheckInInfo(event.id, recordId);
       return res.json({
         success: false,
-        error: 'User already checked in',
+        status: 'duplicate',
+        error: `${record.name} પહેલેથી ચેક-ઇન થયેલ છે`,
         record,
+        photoUrl,
+        checkinInfo,
       });
     }
 
@@ -1053,13 +1063,15 @@ router.post('/api/checkin', requireAdmin, requireEventAccess, async (req, res, n
     );
 
     if (!result.success) {
-      return res.json({ success: false, error: result.error });
+      return res.json({ success: false, status: 'invalid', error: result.error });
     }
 
     return res.json({
       success: true,
-      message: `${record.name} checked in successfully`,
+      status: 'success',
+      message: `${record.name} સફળતાપૂર્વક ચેક-ઇન થયા!`,
       record,
+      photoUrl,
     });
   } catch (err) {
     console.error('Check-in error:', err);
