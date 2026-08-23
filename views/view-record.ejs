@@ -93,7 +93,7 @@
               btn.disabled = false; btn.textContent = '📧 QR Email મોકલો';
               result.style.display = '';
               result.className = 'alert ' + (data.success ? 'alert-success' : 'alert-error');
-              result.textContent = data.success ? '✅ QR Email sent to <%= record.email %>' : '❌ ' + (data.error || 'Failed');
+              result.textContent = data.success ? '✅ QR Email sent to ' + <%- JSON.stringify(record.email) %> : '❌ ' + (data.error || 'Failed');
             })
             .catch(function(e) {
               btn.disabled = false; btn.textContent = '📧 QR Email મોકલો';
