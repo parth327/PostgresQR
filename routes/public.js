@@ -188,6 +188,21 @@ router.get('/photo/:id', async (req, res) => {
   res.send(photo.buffer);
 });
 
+// GET /api/check-phone -> lightweight duplicate-registration check used by
+// the registration form (fires on blur). Public (no login needed, since the
+// registration form itself is public), so it deliberately returns nothing
+// beyond a yes/no — never the matched person's name or id.
+router.get('/api/check-phone', async (req, res) => {
+  const phone = (req.query.phone || '').trim();
+  if (!/^\d{10}$/.test(phone)) return res.json({ exists: false });
+  try {
+    const existing = await db.findRecordByPhone(phone);
+    res.json({ exists: !!existing });
+  } catch (err) {
+    res.json({ exists: false });
+  }
+});
+
 // GET /qr/:id -> serves the generated QR code PNG straight from the database
 router.get('/qr/:id', async (req, res) => {
   const qrBuffer = await db.getQr(req.params.id);
