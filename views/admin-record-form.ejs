@@ -1,0 +1,140 @@
+<% var pageTitle = 'વપરાશકર્તા સંપાદિત કરો - એડમિન'; %>
+<%- include('partials/header') %>
+
+<div class="container fade-in-up">
+  <div class="card admin-form-card">
+    <h1>✏️ વપરાશકર્તાની વિગતો સંપાદિત કરો</h1>
+    <p class="help-text" style="margin-bottom:16px;">આ ફેરફારો ફક્ત મુખ્ય એડમિન જ કરી શકે છે. QR કોડ યથાવત રહેશે (તે ફક્ત રેકોર્ડ ID એન્કોડ કરે છે).</p>
+
+    <% if (error) { %>
+      <div class="alert alert-error shake"><%= error %></div>
+    <% } %>
+
+    <form method="POST" action="/admin/record/<%= record.id %>/edit" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-name">પૂરું નામ <span class="req">*</span></label>
+          <input type="text" id="f-name" name="name" required value="<%= record.name || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-age">ઉંમર</label>
+          <input type="number" id="f-age" name="age" min="15" max="100" value="<%= record.age || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-phone">ફોન નંબર <span class="req">*</span></label>
+          <input type="tel" id="f-phone" name="phone" required inputmode="numeric" maxlength="10" value="<%= record.phone || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-whatsapp">વોટ્સએપ નંબર</label>
+          <input type="tel" id="f-whatsapp" name="whatsapp" inputmode="numeric" maxlength="10" value="<%= record.whatsapp || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-email">ઈમેલ</label>
+          <input type="email" id="f-email" name="email" value="<%= record.email || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-dob">જન્મ તારીખ</label>
+          <input type="date" id="f-dob" name="dob" value="<%= record.dob || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-gender">લિંગ</label>
+          <select id="f-gender" name="gender">
+            <option value="">-</option>
+            <% filterOptions.genders.forEach(function(opt) { %>
+              <option value="<%= opt %>" <%= record.gender === opt ? 'selected' : '' %>><%= opt %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-location">એરિયા <span class="req">*</span></label>
+          <select id="f-location" name="location" required>
+            <% filterOptions.locations.forEach(function(opt) { %>
+              <option value="<%= opt %>" <%= record.location === opt ? 'selected' : '' %>><%= opt %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-locationOther">અન્ય એરિયા (જો પસંદ કર્યું હોય તો)</label>
+          <input type="text" id="f-locationOther" name="locationOther" value="<%= record.locationOther || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-pincode">પિનકોડ</label>
+          <input type="text" id="f-pincode" name="pincode" inputmode="numeric" maxlength="6" value="<%= record.pincode || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-houseNumber">ઘર નંબર</label>
+          <input type="text" id="f-houseNumber" name="houseNumber" value="<%= record.houseNumber || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-society">સોસાયટી</label>
+          <input type="text" id="f-society" name="society" value="<%= record.society || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-landmark">લેન્ડમાર્ક</label>
+          <input type="text" id="f-landmark" name="landmark" value="<%= record.landmark || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-education">અભ્યાસ</label>
+          <input type="text" id="f-education" name="education" value="<%= record.education || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-occupation">વ્યવસાય</label>
+          <input type="text" id="f-occupation" name="occupation" value="<%= record.occupation || '' %>" />
+        </div>
+        <div class="field">
+          <label for="f-interest">રુચિનો વિષય</label>
+          <select id="f-interest" name="interest">
+            <option value="">-</option>
+            <% filterOptions.interests.forEach(function(opt) { %>
+              <option value="<%= opt %>" <%= record.interest === opt ? 'selected' : '' %>><%= opt %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-joinMedium">કયા માધ્યમથી જોડાયા</label>
+          <select id="f-joinMedium" name="joinMedium">
+            <option value="">-</option>
+            <% filterOptions.joinMediums.forEach(function(opt) { %>
+              <option value="<%= opt %>" <%= record.joinMedium === opt ? 'selected' : '' %>><%= opt %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-joinMediumOther">અન્ય માધ્યમ (જો પસંદ કર્યું હોય તો)</label>
+          <input type="text" id="f-joinMediumOther" name="joinMediumOther" value="<%= record.joinMediumOther || '' %>" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-address">સરનામું</label>
+        <input type="text" id="f-address" name="address" value="<%= record.address || '' %>" />
+      </div>
+      <div class="field">
+        <label for="f-notes">નોંધ</label>
+        <textarea id="f-notes" name="notes" rows="3"><%= record.notes || '' %></textarea>
+      </div>
+
+      <div class="field">
+        <label>વર્તમાન ફોટો</label>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
+          <% if (photoUrl) { %>
+            <img src="<%= photoUrl %>" alt="<%= record.name %>" style="width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px var(--primary-light);" />
+          <% } else { %>
+            <div style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-light);font-size:1.6rem;">👤</div>
+          <% } %>
+          <span class="help-text" style="margin:0;">નવો ફોટો પસંદ કરો તો જ બદલાશે, નહીં તો હાલનો ફોટો રહેશે.</span>
+        </div>
+        <input type="file" name="photo" accept="image/*" />
+      </div>
+
+      <p class="help-text">નોંધણી તારીખ: <%= formatDateTimeGu(record.createdAt) %></p>
+
+      <div class="actions-row">
+        <button type="submit" class="btn btn-glow">✓ ફેરફારો સાચવો</button>
+        <a href="/admin/record/<%= record.id %>" class="btn btn-secondary">રદ કરો</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
