@@ -18,7 +18,7 @@
       <% } %>
       <div class="header-stats">
         <div class="stat-item">
-          <div class="stat-value"><%= stats.total_checked_in %></div>
+          <div class="stat-value" id="statTotal"><%= stats.total_checked_in %></div>
           <div class="stat-label">ચેક-ઇન થયેલા</div>
         </div>
         <% if (event.max_capacity) { %>
@@ -39,8 +39,12 @@
       <div class="camera-controls">
         <button id="startBtn" class="btn" onclick="startScanner()">📷 કૅમેરા શરૂ કરો</button>
         <button id="stopBtn" class="btn btn-danger" style="display:none;" onclick="stopScanner()">🛑 કૅમેરા બંધ કરો</button>
+        <span id="scanStatus" class="scan-status"></span>
       </div>
-      <video id="video" style="display: none;"></video>
+      <div id="videoWrap" class="video-wrap" style="display:none;">
+        <video id="video"></video>
+        <div class="scan-frame"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span></div>
+      </div>
       <div id="result"></div>
 
       <h3>જાતે દાખલ કરો</h3>
@@ -52,46 +56,43 @@
           onkeypress="handleManualInput(event)"
           autocomplete="off"
         >
-        <button class="btn" onclick="performCheckIn()">➕ ચેક-ઇન કરો</button>
+        <button class="btn" onclick="performCheckIn(document.getElementById('manualInput').value.trim(), false)">➕ ચેક-ઇન કરો</button>
       </div>
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:24px 0 8px;">
-      <h2 style="margin:0;">👥 હાજર લોકો (<%= attendance.length %>/<%= event.max_capacity || '∞' %>)</h2>
+      <h2 style="margin:0;" id="attendanceHeading">👥 હાજર લોકો (<span id="attendanceCount"><%= attendance.length %></span>/<%= event.max_capacity || '∞' %>)</h2>
       <% if (attendance.length > 0) { %>
         <a href="/admin/events/<%= event.id %>/export" class="btn btn-secondary btn-sm">⬇ એક્સેલમાં એક્સપોર્ટ કરો</a>
       <% } %>
     </div>
 
-    <% if (attendance.length === 0) { %>
-      <div class="empty-state card">
-        <p>હજુ સુધી કોઈએ ચેક-ઇન કર્યું નથી. QR કોડ સ્કેન કરવાનું શરૂ કરો!</p>
-      </div>
-    <% } else { %>
-      <div class="attendance-list">
-        <% attendance.forEach(function(person) { %>
-          <div class="attendee-card">
-            <h4><%= person.name %></h4>
-            <p>📞 <strong><%= person.phone %></strong></p>
-            <% if (person.email) { %>
-              <p>📧 <%= person.email %></p>
-            <% } %>
-            <% if (person.location) { %>
-              <p>📍 <%= person.location === 'અન્ય' ? (person.location_other || person.location) : person.location %></p>
-            <% } %>
-            <p class="checkin-time">✓ <%= formatTimeGu(person.checked_in_at) %></p>
-            <p class="checkin-by">દ્વારા: <%= person.checked_in_by %></p>
-            <button
-              class="btn btn-danger btn-sm"
-              style="width:100%; margin-top:8px;"
-              onclick="removeCheckIn('<%= person.record_id %>')"
-            >
-              ✕ દૂર કરો
-            </button>
-          </div>
-        <% }); %>
-      </div>
-    <% } %>
+    <div id="emptyState" class="empty-state card" style="<%= attendance.length === 0 ? '' : 'display:none;' %>">
+      <p>હજુ સુધી કોઈએ ચેક-ઇન કર્યું નથી. QR કોડ સ્કેન કરવાનું શરૂ કરો!</p>
+    </div>
+    <div class="attendance-list" id="attendanceList">
+      <% attendance.forEach(function(person) { %>
+        <div class="attendee-card" data-record-id="<%= person.record_id %>">
+          <h4><%= person.name %></h4>
+          <p>📞 <strong><%= person.phone %></strong></p>
+          <% if (person.email) { %>
+            <p>📧 <%= person.email %></p>
+          <% } %>
+          <% if (person.location) { %>
+            <p>📍 <%= person.location === 'અન્ય' ? (person.location_other || person.location) : person.location %></p>
+          <% } %>
+          <p class="checkin-time">✓ <%= formatTimeGu(person.checked_in_at) %></p>
+          <p class="checkin-by">દ્વારા: <%= person.checked_in_by %></p>
+          <button
+            class="btn btn-danger btn-sm"
+            style="width:100%; margin-top:8px;"
+            onclick="removeCheckIn('<%= person.record_id %>')"
+          >
+            ✕ દૂર કરો
+          </button>
+        </div>
+      <% }); %>
+    </div>
 
     <div class="actions-row" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
       <a href="/admin/events/<%= event.id %>" class="btn">📊 ઇવેન્ટ વિગતો</a>
@@ -100,73 +101,176 @@
   <% } %>
 </div>
 
+<!-- Scan result modal: shown after every scan/manual lookup. Admin must tap
+     ઠીક છે (OK) to dismiss before the next scan is processed. -->
+<div id="scanModalOverlay" class="scan-modal-overlay">
+  <div class="scan-modal-card" id="scanModalCard">
+    <div id="scanModalHeader" class="scan-modal-header">
+      <div class="scan-modal-icon" id="scanModalIcon">⏳</div>
+      <h3 id="scanModalTitle">તપાસ કરી રહ્યાં છીએ...</h3>
+      <p id="scanModalSubtitle"></p>
+    </div>
+    <div id="scanModalBody" class="scan-modal-body"></div>
+    <button id="scanModalOkBtn" class="btn btn-glow scan-modal-ok" onclick="closeScanModal()">ઠીક છે (OK)</button>
+  </div>
+</div>
+
 <script>
   const eventId = '<%= event ? event.id : "" %>';
   let codeReader = null;
+  let scannerActive = false;   // camera stream is on
+  let modalOpen = false;       // result modal currently shown
+  let modalResultReady = false; // true once the modal shows a final result (not the loading spinner)
+  let awaitingResponse = false; // a checkin request is in-flight (blocks new scans)
+  let audioCtx = null;
 
-  function startScanner() {
-    const video = document.getElementById('video');
+  // ---------- Small helpers ----------
 
-    if (!video) {
-      showMessage('વિડિયો એલિમેન્ટ મળ્યું નહીં', 'error');
-      return;
-    }
+  const GU_DIGITS = ['૦','૧','૨','૩','૪','૫','૬','૭','૮','૯'];
+  function toGuDigits(n) { return String(n).replace(/[0-9]/g, d => GU_DIGITS[d]); }
+  function formatTimeGuClient(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true,
+    }).formatToParts(d);
+    const get = t => parts.find(p => p.type === t).value;
+    return `${toGuDigits(get('hour'))}:${toGuDigits(get('minute'))} ${get('dayPeriod')}`;
+  }
 
-    video.style.display = 'block';
+  function beep(kind) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      if (kind === 'detect') {
+        osc.frequency.value = 880; gain.gain.value = 0.08;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+      } else if (kind === 'success') {
+        osc.frequency.value = 1046; gain.gain.value = 0.1;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+      } else if (kind === 'warn') {
+        osc.frequency.value = 660; gain.gain.value = 0.1;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      } else {
+        osc.frequency.value = 220; gain.gain.value = 0.12;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+      }
+    } catch (e) { /* audio not available, ignore */ }
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+  }
+
+  function setScanStatus(text) {
+    const el = document.getElementById('scanStatus');
+    if (el) el.textContent = text;
+  }
+
+  // ---------- Camera scanner ----------
+
+  async function startScanner() {
+    if (scannerActive) return;
+    const videoWrap = document.getElementById('videoWrap');
+    videoWrap.style.display = 'block';
     document.getElementById('startBtn').style.display = 'none';
     document.getElementById('stopBtn').style.display = 'inline-block';
+    setScanStatus('📷 કૅમેરા શરૂ થઈ રહ્યો છે...');
 
-    // Check for camera permission
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showMessage('કૅમેરા સપોર્ટેડ નથી. કૃપા કરીને જાતે દાખલ કરો.', 'error');
+      videoWrap.style.display = 'none';
+      document.getElementById('startBtn').style.display = 'inline-block';
+      document.getElementById('stopBtn').style.display = 'none';
       return;
     }
 
     try {
-      codeReader = new ZXing.BrowserQRCodeReader();
-      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-        if (result) {
-          const qrText = result.text;
-          // Extract ID from QR URL (e.g., http://localhost:3000/view/uuid -> uuid)
-          const match = qrText.match(/\/view\/([a-f0-9-]+)$/);
-          if (match) {
-            const recordId = match[1];
-            document.getElementById('manualInput').value = recordId;
-            performCheckIn();
-          }
-        }
-      });
+      if (!codeReader) codeReader = new ZXing.BrowserQRCodeReader();
+      scannerActive = true;
+
+      const onDecode = (result) => {
+        if (result) handleScanResult(result.text);
+      };
+
+      // Prefer the back camera directly via constraints -- this is faster
+      // than enumerating devices and avoids landing on the front camera.
+      try {
+        await codeReader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' } } },
+          'video',
+          (result) => onDecode(result)
+        );
+      } catch (constraintErr) {
+        // Fallback for browsers/devices where the constrained call fails.
+        await codeReader.decodeFromVideoDevice(undefined, 'video', (result) => onDecode(result));
+      }
+      setScanStatus('🟢 સ્કેન કરવા માટે તૈયાર — QR કોડને ફ્રેમમાં રાખો');
     } catch (err) {
       showMessage('કૅમેરા ભૂલ: ' + err.message, 'error');
-      video.style.display = 'none';
+      scannerActive = false;
+      videoWrap.style.display = 'none';
       document.getElementById('startBtn').style.display = 'inline-block';
       document.getElementById('stopBtn').style.display = 'none';
     }
   }
 
   function stopScanner() {
-    const video = document.getElementById('video');
-    video.style.display = 'none';
+    const videoWrap = document.getElementById('videoWrap');
+    videoWrap.style.display = 'none';
     document.getElementById('startBtn').style.display = 'inline-block';
     document.getElementById('stopBtn').style.display = 'none';
-
+    setScanStatus('');
+    scannerActive = false;
     if (codeReader) {
-      codeReader.reset();
+      try { codeReader.reset(); } catch (e) {}
     }
+  }
+
+  // Extracts the record id from a scanned QR (a /view/<id> URL) or falls
+  // back to treating the raw text as the id itself.
+  function extractRecordId(qrText) {
+    const match = qrText.match(/\/view\/([a-f0-9-]+)$/i);
+    if (match) return match[1];
+    const raw = qrText.trim();
+    if (/^[a-f0-9-]{10,}$/i.test(raw)) return raw;
+    return null;
+  }
+
+  function handleScanResult(qrText) {
+    if (modalOpen || awaitingResponse) return; // ignore frames while a result is being shown
+    const recordId = extractRecordId(qrText);
+    if (!recordId) return; // not a recognizable code, keep scanning silently
+
+    // Freeze the camera immediately so the same code isn't decoded again,
+    // and give instant feedback that something was read.
+    if (codeReader) { try { codeReader.reset(); } catch (e) {} }
+    scannerActive = false;
+    beep('detect');
+    vibrate(40);
+    performCheckIn(recordId, true);
   }
 
   function handleManualInput(e) {
     if (e.key === 'Enter') {
-      performCheckIn();
+      performCheckIn(document.getElementById('manualInput').value.trim(), false);
     }
   }
 
-  async function performCheckIn() {
-    const recordId = document.getElementById('manualInput').value.trim();
+  // ---------- Check-in request + result modal ----------
+
+  async function performCheckIn(recordId, fromScan) {
     if (!recordId) {
       showMessage('કૃપા કરીને વપરાશકર્તા ID દાખલ કરો અથવા સ્કેન કરો', 'error');
       return;
     }
+    if (awaitingResponse) return;
+    awaitingResponse = true;
+
+    openScanModalLoading();
 
     try {
       const response = await fetch('/admin/api/checkin', {
@@ -174,24 +278,160 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recordId, eventId })
       });
-
       const data = await response.json();
+      renderScanModalResult(data, fromScan);
 
       if (data.success) {
-        showMessage(
-          `✓ ${data.record.name} સફળતાપૂર્વક ચેક-ઇન થયા!`,
-          'success'
-        );
-        document.getElementById('manualInput').value = '';
-        document.getElementById('manualInput').focus();
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        showMessage(data.error || 'ચેક-ઇન નિષ્ફળ થયું', 'error');
-        document.getElementById('manualInput').focus();
+        addOrUpdateAttendee(data.record, new Date().toISOString(), '<%= adminUsername %>');
       }
     } catch (err) {
-      showMessage('ભૂલ: ' + err.message, 'error');
+      renderScanModalResult({ success: false, status: 'invalid', error: 'નેટવર્ક ભૂલ: ' + err.message }, fromScan);
+    } finally {
+      awaitingResponse = false;
+      if (!fromScan) {
+        document.getElementById('manualInput').value = '';
+      }
     }
+  }
+
+  function openScanModalLoading() {
+    modalOpen = true;
+    modalResultReady = false;
+    const overlay = document.getElementById('scanModalOverlay');
+    overlay.classList.add('open');
+    document.getElementById('scanModalIcon').textContent = '⏳';
+    document.getElementById('scanModalIcon').className = 'scan-modal-icon';
+    document.getElementById('scanModalTitle').textContent = 'તપાસ કરી રહ્યાં છીએ...';
+    document.getElementById('scanModalSubtitle').textContent = '';
+    document.getElementById('scanModalBody').innerHTML = '';
+    document.getElementById('scanModalCard').className = 'scan-modal-card loading';
+    document.getElementById('scanModalOkBtn').style.display = 'none';
+  }
+
+  function detailRow(label, value) {
+    if (!value) return '';
+    return `<div class="detail-row"><span class="label">${label}</span><span class="value">${escapeHtml(String(value))}</span></div>`;
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderScanModalResult(data, fromScan) {
+    const card = document.getElementById('scanModalCard');
+    const icon = document.getElementById('scanModalIcon');
+    const title = document.getElementById('scanModalTitle');
+    const subtitle = document.getElementById('scanModalSubtitle');
+    const body = document.getElementById('scanModalBody');
+    const okBtn = document.getElementById('scanModalOkBtn');
+
+    okBtn.style.display = 'block';
+    modalResultReady = true;
+
+    const status = data.status || (data.success ? 'success' : 'invalid');
+    card.className = 'scan-modal-card ' + status;
+
+    if (status === 'success') {
+      icon.textContent = '✅';
+      title.textContent = 'ચેક-ઇન સફળ!';
+      subtitle.textContent = data.message || '';
+      beep('success'); vibrate([50, 40, 50]);
+    } else if (status === 'duplicate') {
+      icon.textContent = '⚠️';
+      title.textContent = 'પહેલેથી ચેક-ઇન થયેલ છે';
+      subtitle.textContent = data.error || '';
+      beep('warn'); vibrate([80, 40, 80]);
+    } else {
+      icon.textContent = '❌';
+      title.textContent = 'અમાન્ય';
+      subtitle.textContent = data.error || 'આ QR કોડ માન્ય નથી';
+      beep('invalid'); vibrate([120, 60, 120]);
+    }
+
+    const record = data.record;
+    if (record) {
+      let html = '<div class="scan-modal-profile">';
+      if (data.photoUrl) {
+        html += `<img src="${data.photoUrl}" alt="${escapeHtml(record.name)}" class="scan-modal-photo" />`;
+      } else {
+        html += `<div class="scan-modal-photo scan-modal-photo-placeholder">👤</div>`;
+      }
+      html += `<div><h2>${escapeHtml(record.name)}</h2><p>${escapeHtml(record.occupation || 'નોંધાયેલ વપરાશકર્તા')}</p></div>`;
+      html += '</div>';
+
+      html += '<div class="scan-modal-details">';
+      html += detailRow('ઉંમર', record.age);
+      html += detailRow('ફોન નંબર', record.phone);
+      html += detailRow('વોટ્સએપ નંબર', record.whatsapp);
+      html += detailRow('એરિયા', record.location === 'અન્ય' ? (record.locationOther || record.location) : record.location);
+      html += detailRow('પિનકોડ', record.pincode);
+      html += detailRow('સોસાયટી', record.society);
+      html += detailRow('અભ્યાસ', record.education);
+      html += detailRow('રુચિનો વિષય', record.interest);
+      html += detailRow('ઈમેલ', record.email);
+      if (status === 'duplicate' && data.checkinInfo) {
+        html += detailRow('પહેલા ચેક-ઇન સમય', formatTimeGuClient(data.checkinInfo.checkedInAt));
+        html += detailRow('ચેક-ઇન કરનાર', data.checkinInfo.checkedInBy);
+      }
+      html += '</div>';
+      body.innerHTML = html;
+    } else {
+      body.innerHTML = '';
+    }
+
+    okBtn.focus();
+  }
+
+  function closeScanModal() {
+    if (!modalResultReady) return; // ignore attempts to dismiss while still loading
+    document.getElementById('scanModalOverlay').classList.remove('open');
+    modalOpen = false;
+    if (document.getElementById('videoWrap').style.display !== 'none' || scannerActive === false) {
+      // Resume the camera automatically so the admin can go straight to the
+      // next person without tapping "start camera" again.
+      const wasUsingCamera = document.getElementById('stopBtn').style.display !== 'none';
+      if (wasUsingCamera) startScanner();
+    }
+    const manualInput = document.getElementById('manualInput');
+    if (manualInput) manualInput.focus();
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (modalOpen && (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ')) {
+      e.preventDefault();
+      closeScanModal();
+    }
+  });
+
+  // ---------- Attendance list (updated live, no page reload) ----------
+
+  function addOrUpdateAttendee(record, checkedInAtIso, checkedInBy) {
+    document.getElementById('emptyState').style.display = 'none';
+    const list = document.getElementById('attendanceList');
+    const existing = list.querySelector(`[data-record-id="${record.id}"]`);
+    if (existing) existing.remove();
+
+    const card = document.createElement('div');
+    card.className = 'attendee-card fade-in-up';
+    card.setAttribute('data-record-id', record.id);
+    const locationText = record.location === 'અન્ય' ? (record.locationOther || record.location) : record.location;
+    card.innerHTML = `
+      <h4>${escapeHtml(record.name)}</h4>
+      <p>📞 <strong>${escapeHtml(record.phone || '')}</strong></p>
+      ${record.email ? `<p>📧 ${escapeHtml(record.email)}</p>` : ''}
+      ${locationText ? `<p>📍 ${escapeHtml(locationText)}</p>` : ''}
+      <p class="checkin-time">✓ ${formatTimeGuClient(checkedInAtIso)}</p>
+      <p class="checkin-by">દ્વારા: ${escapeHtml(checkedInBy || '')}</p>
+      <button class="btn btn-danger btn-sm" style="width:100%; margin-top:8px;" onclick="removeCheckIn('${record.id}')">✕ દૂર કરો</button>
+    `;
+    list.prepend(card);
+
+    const countEl = document.getElementById('attendanceCount');
+    const statTotal = document.getElementById('statTotal');
+    if (countEl) countEl.textContent = String(Number(countEl.textContent) + 1);
+    if (statTotal) statTotal.textContent = String(Number(statTotal.textContent) + 1);
   }
 
   async function removeCheckIn(recordId) {
@@ -207,7 +447,14 @@
       const data = await response.json();
       if (data.success) {
         showMessage(data.message, 'success');
-        setTimeout(() => location.reload(), 1000);
+        const card = document.querySelector(`.attendee-card[data-record-id="${recordId}"]`);
+        if (card) card.remove();
+        const countEl = document.getElementById('attendanceCount');
+        const statTotal = document.getElementById('statTotal');
+        if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent) - 1));
+        if (statTotal) statTotal.textContent = String(Math.max(0, Number(statTotal.textContent) - 1));
+        const list = document.getElementById('attendanceList');
+        if (list && list.children.length === 0) document.getElementById('emptyState').style.display = '';
       } else {
         showMessage(data.error, 'error');
       }
@@ -222,16 +469,16 @@
     container.innerHTML = `<div class="msg-banner ${className}">${message}</div>`;
 
     if (type === 'success') {
-      setTimeout(() => {
-        container.innerHTML = '';
-      }, 5000);
+      setTimeout(() => { container.innerHTML = ''; }, 5000);
     }
   }
 
-  // Auto-focus input
+  // Auto-focus input and auto-start the camera so scanning can begin
+  // immediately without an extra tap.
   document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('manualInput');
     if (input) input.focus();
+    startScanner();
   });
 </script>
 
