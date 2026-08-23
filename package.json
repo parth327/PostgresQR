@@ -1,50 +1,198 @@
-{
-  "name": "qr-registration-app",
-  "version": "1.0.0",
-  "description": "User registration form with auto-generated QR code + admin panel",
-  "main": "server.js{
-  "name": "qr-registration-app",
-  "version": "1.0.0",
-  "description": "User registration form with auto-generated QR code + admin panel",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "create-admin": "node utils/create-admin.js",
-    "test-email": "node utils/test-email.js"
-  },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "ejs": "^3.1.10",
-    "exceljs": "^3.4.0",
-    "express": "^4.19.2",
-    "express-session": "^1.18.0",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^9.0.5",
-    "pg": "^8.11.5",
-    "qrcode": "^1.5.3"
-  },
-  "engines": {
-    "node": ">=16"
-  }
+const express = require('express');
+const crypto = require('crypto');
+const multer = require('multer');
+const QRCode = require('qrcode');
+
+const config = require('../config');
+const db = require('../db');
+const notify = require('../utils/notify');
+
+const router = express.Router();
+
+// ---- Photo upload setup (kept in memory, never written to disk) ----
+const storage = multer.memoryStorage();
+
+function fileFilter(req, file, cb) {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (allowed.includes(file.mimetype)) return cb(null, true);
+  cb(new Error('Only image files (jpg, png, webp, gif) are allowed for the photo.'));
 }
 
-  "scripts": {
-    "start": "node server.js",
-    "create-admin": "node utils/create-admin.js",
-    "test-email": "node utils/test-email.js"
-  },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "ejs": "^3.1.10",
-    "exceljs": "^3.4.0",
-    "express": "^4.19.2",
-    "express-session": "^1.18.0",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^9.0.5",
-    "pg": "^8.11.5",
-    "qrcode": "^1.5.3"
-  },
-  "engines": {
-    "node": ">=16"
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+// GET /  -> redirect to register (friendly root)
+router.get('/', (req, res) => {
+  res.redirect('/register');
+});
+
+// GET /register -> show the public registration form (no login required)
+router.get('/register', async (req, res, next) => {
+  try {
+    const events = await db.getAllEvents();
+    res.render('register', { error: null, formData: {}, events });
+  } catch (err) {
+    next(err);
   }
-}
+});
+
+// POST /register -> save details + generate unique QR code
+router.post('/register', (req, res) => {
+  upload.single('photo')(req, res, async (err) => {
+    if (err) {
+      const events = await db.getAllEvents().catch(() => []);
+      return res.render('register', { error: err.message, formData: req.body, events });
+    }
+
+    try {
+      const {
+        name, dob, gender, phone, whatsapp, email, location, locationOther, address,
+        houseNumber, society, landmark, education, occupation, notes, pincode,
+        interest, joinMedium, joinMediumOther, age,
+      } = req.body;
+
+      const missing = [];
+      if (!name || !name.trim()) missing.push('પૂરું નામ');
+      if (!phone || !phone.trim()) missing.push('ફોન નંબર');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !email.trim()) missing.push('ઈમેલ');
+      else if (!emailRegex.test(email.trim())) missing.push('યોગ્ય ઈમેલ સરનામું');
+      if (!location || !location.trim()) missing.push('એરિયા');
+      if (location === 'અન્ય' && (!locationOther || !locationOther.trim())) missing.push('અન્ય એરિયા');
+      if (!education || !education.trim()) missing.push('અભ્યાસ');
+      if (!interest || !interest.trim()) missing.push('રુચિનો વિષય');
+      if (!joinMedium || !joinMedium.trim()) missing.push('કયા માધ્યમથી યુવા સંગમ માં જોડાવાના છો?');
+      if (joinMedium === 'અન્ય' && (!joinMediumOther || !joinMediumOther.trim())) missing.push('અન્ય');
+
+      const ageNum = age ? parseInt(age, 10) : null;
+      if (!age || Number.isNaN(ageNum) || ageNum < 15 || ageNum > 100) missing.push('ઉંમર (15-100)');
+      if (!pincode || !pincode.trim()) missing.push('પિનકોડ');
+      else if (!/^\d{6}$/.test(pincode.trim())) missing.push('યોગ્ય 6-અંકી પિનકોડ');
+
+      if (missing.length) {
+        const events = await db.getAllEvents().catch(() => []);
+        return res.render('register', {
+          error: `કૃપા કરીને આ ફિલ્ડ ભરો: ${missing.join(', ')}`,
+          formData: req.body,
+          events,
+        });
+      }
+
+      const id = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+      const viewUrl = `${config.baseUrl}/view/${id}`;
+
+      const qrBuffer = await QRCode.toBuffer(viewUrl, { type: 'png', width: 400, margin: 2 });
+
+      const record = {
+        id,
+        name: name.trim(),
+        dob: dob || '',
+        gender: gender || '',
+        phone: phone.trim(),
+        whatsapp: (whatsapp || '').trim(),
+        email: (email || '').trim(),
+        location: location.trim(),
+        locationOther: location === 'અન્ય' ? (locationOther || '').trim() : '',
+        houseNumber: (houseNumber || '').trim(),
+        society: (society || '').trim(),
+        landmark: (landmark || '').trim(),
+        address: (address || '').trim(),
+        education: (education || '').trim(),
+        occupation: (occupation || '').trim(),
+        interest: (interest || '').trim(),
+        joinMedium: (joinMedium || '').trim(),
+        joinMediumOther: joinMedium === 'અન્ય' ? (joinMediumOther || '').trim() : '',
+        age: ageNum,
+        notes: (notes || '').trim(),
+        photoData: req.file ? req.file.buffer.toString('base64') : null,
+        photoMime: req.file ? req.file.mimetype : null,
+        qrData: qrBuffer.toString('base64'),
+        createdAt,
+        pincode: (pincode || '').trim() || null,
+      };
+
+      await db.addRecord(record);
+
+      // Email the QR code to the registrant in the background. This calls
+      // an external SMTP provider which can be slow — we don't want the
+      // user's redirect to hang waiting on it, and a delivery failure
+      // should never fail the registration itself.
+      notify
+        .notifyNewRegistration({ record, qrBuffer, viewUrl })
+        .then((results) => {
+          console.log(`[notify] Registration ${id} delivery result:`, results);
+        })
+        .catch((notifyErr) => {
+          console.error(`[notify] Unexpected error sending notification for ${id}:`, notifyErr);
+        });
+
+      res.redirect(`/success/${id}`);
+    } catch (dbErr) {
+      console.error('Failed to save record:', dbErr);
+      res.status(500).render('404', { message: 'Something went wrong saving your details. Please try again.' });
+    }
+  });
+});
+
+// GET /success/:id -> confirmation page showing the generated QR
+router.get('/success/:id', async (req, res) => {
+  const record = await db.getRecordById(req.params.id);
+  if (!record) return res.status(404).render('404', { message: 'Record not found.' });
+  const viewUrl = `${config.baseUrl}/view/${record.id}`;
+  res.render('success', { record, viewUrl, qrUrl: `/qr/${record.id}` });
+});
+
+// GET /view/:id -> page shown when the QR code is scanned.
+// Only a logged-in admin may see the saved details. Anyone else (i.e. any
+// member of the public scanning the QR) is shown a locked/restricted page
+// and offered an admin-login link that brings them straight back here.
+router.get('/view/:id', async (req, res) => {
+  const record = await db.getRecordById(req.params.id);
+  if (!record) return res.status(404).render('404', { message: 'This QR code does not match any record.' });
+
+  const isAdmin = !!(req.session && req.session.isAdmin);
+
+  if (!isAdmin) {
+    return res.status(403).render('view-restricted', {
+      loginUrl: `/admin/login?next=${encodeURIComponent(`/view/${record.id}`)}`,
+    });
+  }
+
+  const attendanceHistory = await db.getAttendanceByUser(record.id);
+
+  res.render('view-record', {
+    record,
+    photoUrl: record.hasPhoto ? `/photo/${record.id}` : null,
+    qrUrl: `/qr/${record.id}`,
+    isAdmin: true,
+    attendanceHistory,
+  });
+});
+
+// GET /photo/:id -> serves the uploaded photo straight from the database.
+// Restricted to admins only, same as the profile details themselves.
+router.get('/photo/:id', async (req, res) => {
+  if (!(req.session && req.session.isAdmin)) {
+    return res.status(403).send('Forbidden');
+  }
+  const photo = await db.getPhoto(req.params.id);
+  if (!photo) return res.status(404).send('Not found');
+  res.set('Content-Type', photo.mime);
+  res.set('Content-Disposition', `inline; filename="photo-${req.params.id}"`);
+  res.send(photo.buffer);
+});
+
+// GET /qr/:id -> serves the generated QR code PNG straight from the database
+router.get('/qr/:id', async (req, res) => {
+  const qrBuffer = await db.getQr(req.params.id);
+  if (!qrBuffer) return res.status(404).send('Not found');
+  res.set('Content-Type', 'image/png');
+  res.set('Content-Disposition', `inline; filename="qr-${req.params.id}.png"`);
+  res.send(qrBuffer);
+});
+
+module.exports = router;
