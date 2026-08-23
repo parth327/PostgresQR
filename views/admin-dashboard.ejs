@@ -148,7 +148,10 @@
 
                 <% if (adminRole === 'main' && r.email) { %>
                   <a href="/admin/custom-email?to=<%= encodeURIComponent(r.email) %>&name=<%= encodeURIComponent(r.name) %>" class="btn btn-secondary btn-sm">✉ ઈમેલ</a>
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="sendQr(this,'<%= r.id %>',<%- JSON.stringify(r.name) %>)" title="QR Email Resend">📧 QR</button>
+                  <button type="button" class="btn btn-secondary btn-sm qr-send-btn"
+                    data-id="<%= r.id %>"
+                    data-name="<%= r.name.replace(/"/g, '&quot;') %>"
+                    title="QR Email Resend">📧 QR</button>
                 <% } %>
                 <% if (adminRole === 'main') { %>
                 <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
@@ -196,11 +199,19 @@ function showToast(msg, ok) {
   }, 4000);
 }
 
-function sendQr(btn, id, name) {
+// Use event delegation — avoids all inline onclick quote-escaping issues
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.qr-send-btn');
+  if (!btn) return;
+  var id   = btn.getAttribute('data-id');
+  var name = btn.getAttribute('data-name');
   btn.disabled = true;
   btn.textContent = '⏳';
-  fetch('/admin/send-qr/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-    .then(function(r){ return r.json(); })
+  fetch('/admin/send-qr/' + id, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+    .then(function(r) { return r.json(); })
     .then(function(data) {
       btn.disabled = false;
       btn.textContent = '📧 QR';
@@ -210,12 +221,12 @@ function sendQr(btn, id, name) {
         showToast('❌ Failed: ' + (data.error || 'Unknown error'), false);
       }
     })
-    .catch(function(e) {
+    .catch(function() {
       btn.disabled = false;
       btn.textContent = '📧 QR';
       showToast('❌ Network error', false);
     });
-}
+});
 </script>
 
 <%- include('partials/footer') %>
