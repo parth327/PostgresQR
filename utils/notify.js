@@ -42,27 +42,11 @@ function brevoRequest(payload) {
   });
 }
 
-// Branded HTML email shell — QR code embedded as base64 <img> src
-// (NOT using cid: inline attachment — Brevo's /v3/smtp/email API does not
-// support CID-based inline images, which caused the empty QR box bug).
-function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, qrBase64 }) {
-  const ctaButton = ctaText && ctaUrl
-    ? `<tr><td align="center" style="padding:4px 32px 34px;">
-         <a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#ff8a00 0%,#e65c00 55%,#b33600 100%);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 34px;border-radius:999px;box-shadow:0 6px 16px rgba(230,92,0,0.35);">${ctaText}</a>
-       </td></tr>`
-    : '';
-
-  // FIX: embed QR as a base64 data URI directly in the <img src> attribute.
-  // This works reliably across all major email clients and Brevo's API.
-  const qrImage = qrBase64
-    ? `<tr><td align="center" style="padding:0 32px 28px;">
-         <div style="background:#fff8f0;border:2px dashed rgba(230,92,0,0.35);border-radius:18px;padding:22px;display:inline-block;">
-           <img src="data:image/png;base64,${qrBase64}" width="220" height="220" alt="QR Code" style="display:block;border-radius:10px;" />
-         </div>
-         <p style="margin:10px 0 0;font-size:13px;color:#7a6552;">જો QR Code ન દેખાય, તો attachment માં PNG ફાઇલ ખોલો.</p>
-       </td></tr>`
-    : '';
-
+// Branded HTML email shell.
+// - QR code box removed (was unreliable across email clients)
+// - "તમારી પ્રોફાઇલ જુઓ" CTA button removed
+// - QR is sent only as a PNG attachment — clean and universally supported.
+function buildEmailHtml({ title, bodyHtml }) {
   return `<!DOCTYPE html>
 <html lang="gu">
 <head>
@@ -87,13 +71,11 @@ function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, qrBase64 }) {
           <tr><td style="height:5px;background:linear-gradient(90deg,#ffb703 0%,#e65c00 50%,#b33600 100%);"></td></tr>
           <!-- Body -->
           <tr>
-            <td style="padding:34px 32px 10px;">
+            <td style="padding:34px 32px 32px;">
               <h1 style="margin:0 0 18px;font-size:21px;line-height:1.4;color:#2c1a0e;font-weight:800;">${title}</h1>
               <div style="font-size:16px;line-height:1.8;color:#3a281a;">${bodyHtml}</div>
             </td>
           </tr>
-          ${qrImage}
-          ${ctaButton}
           <!-- Footer -->
           <tr>
             <td style="padding:22px 32px;background:#fff8f0;border-top:1px solid #f3ddc4;text-align:center;">
@@ -109,7 +91,9 @@ function buildEmailHtml({ title, bodyHtml, ctaText, ctaUrl, qrBase64 }) {
 </html>`;
 }
 
-async function sendEmailQr({ to, name, qrBuffer, viewUrl }) {
+// Sends the QR code as a PNG email attachment only.
+// No inline QR image box, no profile CTA button — clean and reliable.
+async function sendEmailQr({ to, name, qrBuffer }) {
   if (!to || !to.trim()) {
     console.warn('[notify] Email skipped: no email address on this record.');
     return { skipped: true, reason: 'no email address on record' };
@@ -128,15 +112,13 @@ async function sendEmailQr({ to, name, qrBuffer, viewUrl }) {
 
     const bodyHtml =
       `<p style="margin:0 0 12px;">નમસ્તે ${name},</p>` +
-      `<p style="margin:0 0 12px;">'યુવા સંગમ ૨૦૨૬' માટે નોંધણી કરાવવા બદલ આભાર. તમારો QR કોડ નીચે અને ઈમેઇલ સાથે PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.</p>` +
-      `<p style="margin:0;">કૃપા કરીને ચેક-ઈન સમયે તે બતાવશો.</p>`;
+      `<p style="margin:0 0 12px;">'યુવા સંગમ ૨૦૨૬' માટે નોંધણી કરાવવા બદલ આભાર.</p>` +
+      `<p style="margin:0 0 12px;">તમારો QR કોડ આ ઈમેઇલ સાથે <strong>PNG attachment</strong> તરીકે જોડવામાં આવ્યો છે.</p>` +
+      `<p style="margin:0;">ચેક-ઈન સમયે attachment ખોલો અને QR કોડ બતાવો.</p>`;
 
     const htmlContent = buildEmailHtml({
       title: `નમસ્તે ${name}, આ રહ્યો તમારો QR કોડ`,
       bodyHtml,
-      qrBase64,          // FIX: pass base64 string, NOT cid
-      ctaText: viewUrl ? 'તમારી પ્રોફાઇલ જુઓ' : null,
-      ctaUrl: viewUrl || null,
     });
 
     const result = await brevoRequest({
@@ -146,14 +128,11 @@ async function sendEmailQr({ to, name, qrBuffer, viewUrl }) {
       textContent:
         `નમસ્તે ${name},\n\n` +
         `'યુવા સંગમ ૨૦૨૬' (Yuva Sangam 2026) માટે નોંધણી કરાવવા બદલ આભાર.\n` +
-        `તમારો QR કોડ ઈમેઇલ attachment માં PNG ફોર્મેટમાં જોડવામાં આવ્યો છે.\n` +
-        `કૃપા કરીને ચેક-ઈન સમયે તે બતાવશો.\n\n` +
-        (viewUrl ? `પ્રોફાઇલ: ${viewUrl}\n` : ''),
+        `તમારો QR કોડ attachment (qr-code.png) તરીકે જોડ્યો છે.\n` +
+        `ચેક-ઈન સમયે attachment ખોલો અને QR કોડ બતાવો.\n`,
       htmlContent,
-      // Keep the PNG attachment as a fallback for email clients that block base64 images
-      attachment: [{ content: qrBase64, name: `qr-${name.replace(/\s+/g,'-')}.png` }],
-      // NOTE: inlineImages removed — Brevo API ignores it and CID images
-      // never rendered. base64 src in the HTML is the correct approach.
+      // QR as PNG attachment — universally supported by all email clients
+      attachment: [{ content: qrBase64, name: `qr-${name.replace(/\s+/g, '-')}.png` }],
     });
 
     console.log(`[notify] SUCCESS: email sent to ${to.trim()} via Brevo — messageId=${result.messageId}`);
@@ -169,7 +148,7 @@ async function sendEmailQr({ to, name, qrBuffer, viewUrl }) {
   }
 }
 
-// Manual event-announcement email — reuses the same branded shell
+// Manual event-announcement email — clean branded shell, no QR or CTA
 async function sendEventEmail({ to, name, subject, bodyHtml }) {
   if (!to || !to.trim()) {
     return { skipped: true, reason: 'no email address on record' };
@@ -197,8 +176,9 @@ async function sendEventEmail({ to, name, subject, bodyHtml }) {
   }
 }
 
-async function notifyNewRegistration({ record, qrBuffer, viewUrl }) {
-  const emailResult = await sendEmailQr({ to: record.email, name: record.name, qrBuffer, viewUrl });
+// Called after registration — no viewUrl needed anymore
+async function notifyNewRegistration({ record, qrBuffer }) {
+  const emailResult = await sendEmailQr({ to: record.email, name: record.name, qrBuffer });
   return { email: emailResult };
 }
 
