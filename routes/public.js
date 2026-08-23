@@ -122,7 +122,7 @@ router.post('/register', (req, res) => {
       // user's redirect to hang waiting on it, and a delivery failure
       // should never fail the registration itself.
       notify
-        .notifyNewRegistration({ record, qrBuffer, viewUrl })
+        .notifyNewRegistration({ record, qrBuffer })
         .then((results) => {
           console.log(`[notify] Registration ${id} delivery result:`, results);
         })
