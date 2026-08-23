@@ -148,7 +148,7 @@
 
                 <% if (adminRole === 'main' && r.email) { %>
                   <a href="/admin/custom-email?to=<%= encodeURIComponent(r.email) %>&name=<%= encodeURIComponent(r.name) %>" class="btn btn-secondary btn-sm">✉ ઈમેલ</a>
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="sendQr(this,'<%= r.id %>','<%= r.name.replace(/'/g,\"\\\\'\" ) %>')" title="QR Email Resend">📧 QR</button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="sendQr(this,'<%= r.id %>',<%- JSON.stringify(r.name) %>)" title="QR Email Resend">📧 QR</button>
                 <% } %>
                 <% if (adminRole === 'main') { %>
                 <form action="/admin/delete/<%= r.id %>" method="POST" style="display:inline"
