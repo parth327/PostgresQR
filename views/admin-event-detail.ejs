@@ -33,7 +33,7 @@
     <p>
       <strong>સ્થિતિ:</strong>
       <span class="status-badge status-<%= event.status %>">
-        <%= event.status === 'upcoming' ? 'આગામી' : event.status === 'ongoing' ? 'ચાલુ છે' : event.status === 'completed' ? 'પૂર્ણ' : event.status.toUpperCase() %>
+        <%= event.status === 'upcoming' ? 'આગામી' : event.status === 'ongoing' ? 'ચાલુ છે' : event.status === 'completed' ? 'પૂર્ણ' : (event.status || 'આગામી').toUpperCase() %>
       </span>
     </p>
     <% if (event.event_description) { %>
