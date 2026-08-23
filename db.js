@@ -540,6 +540,15 @@ async function isUserCheckedIn(eventId, recordId) {
   return rows.length > 0;
 }
 
+async function getCheckInInfo(eventId, recordId) {
+  const { rows } = await pool.query(
+    `SELECT checked_in_at, checked_in_by FROM event_attendance WHERE event_id = $1 AND record_id = $2`,
+    [eventId, recordId]
+  );
+  if (!rows[0]) return null;
+  return { checkedInAt: rows[0].checked_in_at, checkedInBy: rows[0].checked_in_by };
+}
+
 async function getAttendanceByUser(recordId) {
   // Get all events a user has attended
   const { rows } = await pool.query(
@@ -649,6 +658,7 @@ module.exports = {
   queryEventAttendance,
   getAttendanceCount,
   isUserCheckedIn,
+  getCheckInInfo,
   getAttendanceByUser,
   removeCheckIn,
   getEventStats,
