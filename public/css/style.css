@@ -225,6 +225,46 @@ body {
 .topbar nav a:hover, .topbar nav button:hover { color: var(--primary); }
 .topbar nav a:hover::after, .topbar nav button:hover::after { width: 100%; }
 
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--primary-dark);
+  cursor: pointer;
+  padding: 6px 12px;
+  min-height: 40px;
+}
+
+@media (max-width: 780px) {
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .topbar nav.has-toggle {
+    display: none;
+    width: 100%;
+    order: 3;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+  .topbar nav.has-toggle.open { display: flex; }
+  .topbar nav.has-toggle a, .topbar nav.has-toggle button {
+    margin-left: 0;
+    padding: 12px 6px;
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+  .topbar nav.has-toggle form { width: 100%; }
+  .topbar nav.has-toggle form button { width: 100%; }
+}
+
 /* ---------- cards ---------- */
 .card {
   background: var(--card-bg);
@@ -416,7 +456,7 @@ textarea {
   padding: 11px 14px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 0.95rem;
+  font-size: 16px; /* keeps iOS Safari from auto-zooming the page on focus */
   font-family: inherit;
   background: #fff;
   color: var(--text);
@@ -513,8 +553,9 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-block { width: 100%; }
 
 .btn-sm {
-  padding: 7px 14px;
+  padding: 9px 14px;
   font-size: 0.82rem;
+  min-height: 40px;
 }
 
 .actions-row {
@@ -790,6 +831,12 @@ table.records-table tr:hover { background: #faf9ff; }
   }
   table.records-table td:first-child { text-align: center; }
   table.records-table td:first-child::before { content: none; }
+  table.records-table td:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
   .mini-qr { margin: 0 auto; display: block; }
 }
 
@@ -1060,6 +1107,191 @@ body.page-admin-login .subtitle {
 }
 
 .msg-banner.warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+/* ==================== Pagination ==================== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.pagination a, .pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.pagination a:hover { border-color: var(--primary); color: var(--primary); }
+.pagination .current { background: var(--grad-primary); color: #fff; border-color: transparent; }
+.pagination .disabled { opacity: 0.4; pointer-events: none; }
+.pagination-info { text-align: center; color: var(--text-light); font-size: 0.85rem; margin: 6px 0 0; }
+
+/* ==================== Quick-contact links (call / WhatsApp) ==================== */
+.quick-contact { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.quick-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 20px;
+  min-height: 32px;
+}
+.quick-contact .call-link { background: #eef2ff; color: #4338ca; }
+.quick-contact .whatsapp-link { background: #dcfce7; color: #15803d; }
+.quick-contact .call-link:hover { background: #e0e7ff; }
+.quick-contact .whatsapp-link:hover { background: #bbf7d0; }
+
+/* ==================== Duplicate-registration notice ==================== */
+.duplicate-phone-notice {
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-top: 6px;
+  animation: fadeInUp 0.25s ease both;
+}
+.duplicate-phone-notice.show { display: flex; }
+
+/* Manual search-as-you-type dropdown */
+.search-dropdown {
+  position: absolute;
+  top: 100%; left: 0; right: 0;
+  margin-top: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.search-dropdown-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.search-dropdown-item:last-child { border-bottom: none; }
+.search-dropdown-item:hover { background: var(--primary-light); }
+.search-dropdown-item strong { display: block; color: var(--text); font-size: 0.92rem; }
+.search-dropdown-sub { font-size: 0.78rem; color: var(--text-light); }
+.badge-checked {
+  font-size: 0.72rem; font-weight: 700; color: var(--success);
+  background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 20px;
+  padding: 2px 8px; white-space: nowrap;
+}
+
+/* Scan modal footer actions (Undo + OK) */
+.scan-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.scan-modal-actions .scan-modal-ok { margin-top: 0; flex: 2; }
+.scan-modal-undo { flex: 1; }
+
+/* ==================== Mobile responsiveness (check-in screen) ====================
+   The check-in page is used almost entirely on phones (an admin standing at
+   the entrance with the camera pointed at guests), so it gets its own
+   focused set of breakpoints on top of the site-wide ones above. */
+@media (max-width: 640px) {
+  .event-hero { padding: 20px 18px; }
+  .event-hero h1 { font-size: 1.25rem; }
+  .event-hero .header-stats { gap: 18px; }
+  .event-hero .stat-value { font-size: 1.4rem; }
+  .event-hero .stat-label { font-size: 0.72rem; }
+
+  .scanner-card { padding: 16px; }
+
+  /* Taller, portrait-oriented preview -- easier to line up a QR code with
+     one hand while holding the phone normally, instead of a short
+     landscape strip. */
+  .video-wrap { max-width: 100%; }
+  #video { height: auto; aspect-ratio: 3 / 4; max-height: 62vh; }
+  .scan-frame { width: 68%; }
+
+  .attendance-list { grid-template-columns: 1fr; }
+
+  /* Bottom-sheet style modal: easier to reach the OK button with a thumb
+     than a small centered dialog, and feels native on a phone. */
+  .scan-modal-overlay { align-items: flex-end; padding: 0; }
+  .scan-modal-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    padding: 18px 18px 16px;
+    animation: scanModalSlideUp 0.22s ease both;
+  }
+  .scan-modal-card::before {
+    content: '';
+    display: block;
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 0 auto 14px;
+  }
+  .scan-modal-details { max-height: none; }
+  .scan-modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    padding-top: 10px;
+    margin-top: 14px;
+  }
+}
+@keyframes scanModalSlideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  /* Stack the camera buttons so each has a full-width, easy-to-tap target;
+     keep the mute toggle compact beside them. */
+  .camera-controls { gap: 8px; }
+  .camera-controls #startBtn, .camera-controls #stopBtn { flex: 1 1 auto; min-width: 0; }
+  #soundToggleBtn { flex: 0 0 auto; }
+  .scan-status { flex-basis: 100%; text-align: center; }
+
+  .manual-checkin { flex-direction: column; }
+  .manual-checkin input { min-width: 0; width: 100%; }
+  .manual-checkin .btn { width: 100%; }
+
+  /* iOS Safari auto-zooms on focusing any input under 16px -- bump these
+     specific fields up to avoid that jarring zoom during check-in. */
+  #manualInput, #attendeeFilter {
+    font-size: 16px;
+  }
+
+  .search-dropdown-item { padding: 12px 14px; }
+
+  .scan-modal-icon { font-size: 2.4rem; }
+  .scan-modal-header h3 { font-size: 1.1rem; }
+  .scan-modal-photo { width: 52px; height: 52px; }
+}
+
+@media (max-width: 360px) {
+  /* Very narrow phones: two side-by-side Gujarati-label buttons get
+     cramped, so stack Undo above OK instead. */
+  .scan-modal-actions { flex-direction: column; }
+}
 .manual-checkin { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
 .manual-checkin input { flex: 1; min-width: 200px; }
 
@@ -1077,6 +1309,8 @@ body.page-admin-login .subtitle {
 .attendee-card p { margin: 4px 0; font-size: 0.9rem; color: var(--text-light); }
 .attendee-card .checkin-time { color: var(--success); font-weight: 700; margin-top: 8px; }
 .attendee-card .checkin-by { font-size: 0.78rem; color: var(--text-light); }
+.tel-link { color: var(--primary-dark); font-weight: 600; text-decoration: none; }
+.tel-link:hover { text-decoration: underline; }
 
 .msg-banner { padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-weight: 600; animation: fadeInUp 0.3s ease both; }
 .msg-banner.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
