@@ -169,6 +169,8 @@ router.get('/view/:id', async (req, res) => {
     photoUrl: record.hasPhoto ? `/photo/${record.id}` : null,
     qrUrl: `/qr/${record.id}`,
     isAdmin: true,
+    adminRole: req.session.adminRole || 'main',
+    adminUsername: req.session.adminUsername || '',
     attendanceHistory,
   });
 });
