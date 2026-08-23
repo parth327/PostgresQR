@@ -647,31 +647,6 @@ router.get('/events/:id/export', requireAdmin, requireEventAccess, async (req, r
   }
 });
 
-// GET /admin/events/:id -> view event details and attendance
-router.get('/events/:id', requireAdmin, requireEventAccess, async (req, res, next) => {
-  try {
-    const event = await db.getEventById(req.params.id);
-    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
-
-    const attendanceFilters = extractAttendanceFilters(req.query);
-    const attendance = await db.queryEventAttendance(req.params.id, attendanceFilters);
-    const stats = await db.getEventStats(req.params.id);
-
-    res.render('admin-event-detail', {
-      event,
-      attendance,
-      stats,
-      attendanceFilters,
-      filterOptions: FILTER_OPTIONS,
-      adminUsername: req.session.adminUsername,
-      adminRole: req.session.adminRole,
-      isAdmin: true,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
 // ==================== EVENT EMAIL ROUTES ====================
 
 function sleep(ms) {
@@ -880,34 +855,6 @@ router.post('/events/:id/email', requireMainAdmin, async (req, res, next) => {
 
 // ==================== QR EMAIL ROUTES (main admin only) ====================
 
-// POST /admin/send-qr/:id -> resend QR email to a single user
-router.post('/send-qr/:id', requireMainAdmin, async (req, res, next) => {
-  try {
-    const record = await db.getRecordById(req.params.id);
-    if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
-
-    if (!record.email || !record.email.trim()) {
-      return res.json({ success: false, error: 'This user has no email address on file.' });
-    }
-
-    const qrBuffer = await db.getQr(req.params.id);
-    if (!qrBuffer) return res.json({ success: false, error: 'QR code not found for this user.' });
-
-    const viewUrl = `${config.baseUrl}/view/${record.id}`;
-    const result = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer, viewUrl });
-
-    if (result.success) {
-      return res.json({ success: true, message: `QR sent to ${record.email}` });
-    } else if (result.skipped) {
-      return res.json({ success: false, error: `Skipped: ${result.reason}` });
-    } else {
-      return res.json({ success: false, error: result.error || 'Failed to send email' });
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
 // GET /admin/send-qr-all -> show bulk QR send confirmation page
 router.get('/send-qr-all', requireMainAdmin, async (req, res, next) => {
   try {
@@ -962,6 +909,59 @@ router.post('/send-qr-all', requireMainAdmin, async (req, res, next) => {
       isAdmin: true,
       result: { sent, failed, skipped, total: targets.length, errors: errors.slice(0, 10) },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/events/:id -> view event details and attendance
+router.get('/events/:id', requireAdmin, requireEventAccess, async (req, res, next) => {
+  try {
+    const event = await db.getEventById(req.params.id);
+    if (!event) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+
+    const attendanceFilters = extractAttendanceFilters(req.query);
+    const attendance = await db.queryEventAttendance(req.params.id, attendanceFilters);
+    const stats = await db.getEventStats(req.params.id);
+
+    res.render('admin-event-detail', {
+      event,
+      attendance,
+      stats,
+      attendanceFilters,
+      filterOptions: FILTER_OPTIONS,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/send-qr/:id -> resend QR email to a single user
+router.post('/send-qr/:id', requireMainAdmin, async (req, res, next) => {
+  try {
+    const record = await db.getRecordById(req.params.id);
+    if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
+
+    if (!record.email || !record.email.trim()) {
+      return res.json({ success: false, error: 'This user has no email address on file.' });
+    }
+
+    const qrBuffer = await db.getQr(req.params.id);
+    if (!qrBuffer) return res.json({ success: false, error: 'QR code not found for this user.' });
+
+    const viewUrl = `${config.baseUrl}/view/${record.id}`;
+    const result = await notify.sendEmailQr({ to: record.email, name: record.name, qrBuffer, viewUrl });
+
+    if (result.success) {
+      return res.json({ success: true, message: `QR sent to ${record.email}` });
+    } else if (result.skipped) {
+      return res.json({ success: false, error: `Skipped: ${result.reason}` });
+    } else {
+      return res.json({ success: false, error: result.error || 'Failed to send email' });
+    }
   } catch (err) {
     next(err);
   }
