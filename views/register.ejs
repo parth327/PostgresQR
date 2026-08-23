@@ -253,6 +253,7 @@
           <div class="field">
             <label for="f-phone"><span data-i18n="lbl-phone">📱 ફોન નંબર</span> <span class="req">*</span></label>
             <input type="tel" id="f-phone" name="phone" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" value="<%= formData.phone || '' %>" placeholder="દા.ત. 9876543210" data-i18n-placeholder="ph-phone" />
+            <div class="duplicate-phone-notice" id="duplicatePhoneNotice">⚠️ <span>આ ફોન નંબર પહેલેથી નોંધાયેલ છે. જો આ તમારો નંબર છે, તો ફરીથી નોંધણી કરવાની જરૂર નથી.</span></div>
           </div>
 
           <div class="field">
@@ -584,6 +585,41 @@
       validationBanner.style.display = 'none';
       btn.classList.add('loading');
       btn.disabled = true;
+    });
+  })();
+</script>
+
+<script>
+  // Live duplicate-phone check — fires when the phone field loses focus.
+  // Purely informational: it never blocks submission, it just tells the
+  // person a record already exists for this number so they don't
+  // accidentally register twice.
+  (function () {
+    var phoneInput = document.getElementById('f-phone');
+    var notice = document.getElementById('duplicatePhoneNotice');
+    if (!phoneInput || !notice) return;
+
+    var lastChecked = '';
+    function checkPhone() {
+      var phone = phoneInput.value.trim();
+      if (!/^[0-9]{10}$/.test(phone)) {
+        notice.classList.remove('show');
+        return;
+      }
+      if (phone === lastChecked) return;
+      lastChecked = phone;
+      fetch('/api/check-phone?phone=' + encodeURIComponent(phone))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (phoneInput.value.trim() !== phone) return; // value changed meanwhile
+          notice.classList.toggle('show', !!data.exists);
+        })
+        .catch(function () { /* silently ignore — not critical */ });
+    }
+
+    phoneInput.addEventListener('blur', checkPhone);
+    phoneInput.addEventListener('input', function () {
+      if (notice.classList.contains('show')) notice.classList.remove('show');
     });
   })();
 </script>
