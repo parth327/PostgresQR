@@ -27,6 +27,10 @@
             <div class="stat-label">ક્ષમતા</div>
           </div>
         <% } %>
+        <div class="stat-item">
+          <div class="stat-value" id="statPace">0</div>
+          <div class="stat-label">છેલ્લી 5 મિનિટમાં</div>
+        </div>
       </div>
     </div>
 
@@ -39,6 +43,7 @@
       <div class="camera-controls">
         <button id="startBtn" class="btn" onclick="startScanner()">📷 કૅમેરા શરૂ કરો</button>
         <button id="stopBtn" class="btn btn-danger" style="display:none;" onclick="stopScanner()">🛑 કૅમેરા બંધ કરો</button>
+        <button id="soundToggleBtn" class="btn btn-secondary btn-sm" onclick="toggleSound()" title="સ્કેન સાઉન્ડ ચાલુ/બંધ કરો">🔊</button>
         <span id="scanStatus" class="scan-status"></span>
       </div>
       <div id="videoWrap" class="video-wrap" style="display:none;">
@@ -47,16 +52,18 @@
       </div>
       <div id="result"></div>
 
-      <h3>જાતે દાખલ કરો</h3>
-      <div class="manual-checkin">
+      <h3>નામ / ફોન નંબરથી શોધો</h3>
+      <div class="manual-checkin" style="position:relative;">
         <input
           type="text"
           id="manualInput"
-          placeholder="વપરાશકર્તા ID પેસ્ટ/સ્કેન કરો અથવા ટાઈપ કરો"
+          placeholder="નામ અથવા ફોન નંબરના થોડા અક્ષરો ટાઈપ કરો, અથવા ID પેસ્ટ/સ્કેન કરો"
           onkeypress="handleManualInput(event)"
+          oninput="handleSearchInput()"
           autocomplete="off"
         >
         <button class="btn" onclick="performCheckIn(document.getElementById('manualInput').value.trim(), false)">➕ ચેક-ઇન કરો</button>
+        <div id="searchDropdown" class="search-dropdown" style="display:none;"></div>
       </div>
     </div>
 
@@ -67,12 +74,19 @@
       <% } %>
     </div>
 
+    <div class="manual-checkin" style="margin-bottom:14px;">
+      <input type="text" id="attendeeFilter" placeholder="🔍 હાજર યાદીમાં નામ કે ફોનથી શોધો..." oninput="filterAttendanceList()" autocomplete="off">
+    </div>
+
     <div id="emptyState" class="empty-state card" style="<%= attendance.length === 0 ? '' : 'display:none;' %>">
       <p>હજુ સુધી કોઈએ ચેક-ઇન કર્યું નથી. QR કોડ સ્કેન કરવાનું શરૂ કરો!</p>
     </div>
+    <div id="noFilterMatch" class="empty-state card" style="display:none;">
+      <p>આ શોધ સાથે કોઈ મેળ મળ્યો નહીં.</p>
+    </div>
     <div class="attendance-list" id="attendanceList">
       <% attendance.forEach(function(person) { %>
-        <div class="attendee-card" data-record-id="<%= person.record_id %>">
+        <div class="attendee-card" data-record-id="<%= person.record_id %>" data-checkin-time="<%= person.checked_in_at %>" data-search="<%= (person.name + ' ' + person.phone).toLowerCase() %>">
           <h4><%= person.name %></h4>
           <p>📞 <strong><%= person.phone %></strong></p>
           <% if (person.email) { %>
@@ -83,6 +97,11 @@
           <% } %>
           <p class="checkin-time">✓ <%= formatTimeGu(person.checked_in_at) %></p>
           <p class="checkin-by">દ્વારા: <%= person.checked_in_by %></p>
+          <div class="quick-contact" style="margin-top:6px;">
+            <% if (person.phone) { %><a href="tel:<%= person.phone %>" class="call-link">📞 કૉલ</a><% } %>
+            <% var pWa = (person.whatsapp || person.phone || '').replace(/\D/g,''); %>
+            <% if (pWa) { %><a href="https://wa.me/91<%= pWa %>" target="_blank" rel="noopener" class="whatsapp-link">💬 WA</a><% } %>
+          </div>
           <button
             class="btn btn-danger btn-sm"
             style="width:100%; margin-top:8px;"
@@ -111,7 +130,10 @@
       <p id="scanModalSubtitle"></p>
     </div>
     <div id="scanModalBody" class="scan-modal-body"></div>
-    <button id="scanModalOkBtn" class="btn btn-glow scan-modal-ok" onclick="closeScanModal()">ઠીક છે (OK)</button>
+    <div class="scan-modal-actions">
+      <button id="scanModalUndoBtn" class="btn btn-secondary scan-modal-undo" style="display:none;" onclick="undoLastCheckin()">↩ પૂર્વવત્ કરો</button>
+      <button id="scanModalOkBtn" class="btn btn-glow scan-modal-ok" onclick="closeScanModal()">ઠીક છે (OK)</button>
+    </div>
   </div>
 </div>
 
@@ -123,6 +145,8 @@
   let modalResultReady = false; // true once the modal shows a final result (not the loading spinner)
   let awaitingResponse = false; // a checkin request is in-flight (blocks new scans)
   let audioCtx = null;
+  let soundEnabled = localStorage.getItem('checkinSoundEnabled') !== 'off';
+  let lastSuccessRecord = null; // record from the most recent successful check-in, for Undo
 
   // ---------- Small helpers ----------
 
@@ -138,7 +162,17 @@
     return `${toGuDigits(get('hour'))}:${toGuDigits(get('minute'))} ${get('dayPeriod')}`;
   }
 
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('checkinSoundEnabled', soundEnabled ? 'on' : 'off');
+    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  });
+
   function beep(kind) {
+    if (!soundEnabled) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -256,6 +290,7 @@
 
   function handleManualInput(e) {
     if (e.key === 'Enter') {
+      document.getElementById('searchDropdown').style.display = 'none';
       performCheckIn(document.getElementById('manualInput').value.trim(), false);
     }
   }
@@ -306,6 +341,7 @@
     document.getElementById('scanModalBody').innerHTML = '';
     document.getElementById('scanModalCard').className = 'scan-modal-card loading';
     document.getElementById('scanModalOkBtn').style.display = 'none';
+    document.getElementById('scanModalUndoBtn').style.display = 'none';
   }
 
   function detailRow(label, value) {
@@ -326,6 +362,7 @@
     const subtitle = document.getElementById('scanModalSubtitle');
     const body = document.getElementById('scanModalBody');
     const okBtn = document.getElementById('scanModalOkBtn');
+    const undoBtn = document.getElementById('scanModalUndoBtn');
 
     okBtn.style.display = 'block';
     modalResultReady = true;
@@ -338,16 +375,20 @@
       title.textContent = 'ચેક-ઇન સફળ!';
       subtitle.textContent = data.message || '';
       beep('success'); vibrate([50, 40, 50]);
+      lastSuccessRecord = data.record;
+      undoBtn.style.display = 'inline-block';
     } else if (status === 'duplicate') {
       icon.textContent = '⚠️';
       title.textContent = 'પહેલેથી ચેક-ઇન થયેલ છે';
       subtitle.textContent = data.error || '';
       beep('warn'); vibrate([80, 40, 80]);
+      undoBtn.style.display = 'none';
     } else {
       icon.textContent = '❌';
       title.textContent = 'અમાન્ય';
       subtitle.textContent = data.error || 'આ QR કોડ માન્ય નથી';
       beep('invalid'); vibrate([120, 60, 120]);
+      undoBtn.style.display = 'none';
     }
 
     const record = data.record;
@@ -360,6 +401,14 @@
       }
       html += `<div><h2>${escapeHtml(record.name)}</h2><p>${escapeHtml(record.occupation || 'નોંધાયેલ વપરાશકર્તા')}</p></div>`;
       html += '</div>';
+
+      const modalWa = (record.whatsapp || record.phone || '').replace(/\D/g, '');
+      if (record.phone || modalWa) {
+        html += '<div class="quick-contact" style="margin:-4px 0 14px;">';
+        if (record.phone) html += `<a href="tel:${escapeHtml(record.phone)}" class="call-link">📞 કૉલ કરો</a>`;
+        if (modalWa) html += `<a href="https://wa.me/91${modalWa}" target="_blank" rel="noopener" class="whatsapp-link">💬 WhatsApp</a>`;
+        html += '</div>';
+      }
 
       html += '<div class="scan-modal-details">';
       html += detailRow('ઉંમર', record.age);
@@ -382,6 +431,31 @@
     }
 
     okBtn.focus();
+  }
+
+  async function undoLastCheckin() {
+    if (!lastSuccessRecord) return;
+    const recordId = lastSuccessRecord.id;
+    try {
+      const response = await fetch('/admin/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordId, eventId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        const card = document.querySelector(`.attendee-card[data-record-id="${recordId}"]`);
+        if (card) card.remove();
+        adjustCounts(-1);
+        showMessage('↩ ચેક-ઇન પૂર્વવત્ કરાયું: ' + lastSuccessRecord.name, 'success');
+        lastSuccessRecord = null;
+        closeScanModal();
+      } else {
+        showMessage(data.error || 'પૂર્વવત્ કરવામાં નિષ્ફળ', 'error');
+      }
+    } catch (err) {
+      showMessage('ભૂલ: ' + err.message, 'error');
+    }
   }
 
   function closeScanModal() {
@@ -416,7 +490,10 @@
     const card = document.createElement('div');
     card.className = 'attendee-card fade-in-up';
     card.setAttribute('data-record-id', record.id);
+    card.setAttribute('data-checkin-time', checkedInAtIso);
+    card.setAttribute('data-search', (record.name + ' ' + (record.phone || '')).toLowerCase());
     const locationText = record.location === 'અન્ય' ? (record.locationOther || record.location) : record.location;
+    const waNum = (record.whatsapp || record.phone || '').replace(/\D/g, '');
     card.innerHTML = `
       <h4>${escapeHtml(record.name)}</h4>
       <p>📞 <strong>${escapeHtml(record.phone || '')}</strong></p>
@@ -424,15 +501,106 @@
       ${locationText ? `<p>📍 ${escapeHtml(locationText)}</p>` : ''}
       <p class="checkin-time">✓ ${formatTimeGuClient(checkedInAtIso)}</p>
       <p class="checkin-by">દ્વારા: ${escapeHtml(checkedInBy || '')}</p>
+      <div class="quick-contact" style="margin-top:6px;">
+        ${record.phone ? `<a href="tel:${escapeHtml(record.phone)}" class="call-link">📞 કૉલ</a>` : ''}
+        ${waNum ? `<a href="https://wa.me/91${waNum}" target="_blank" rel="noopener" class="whatsapp-link">💬 WA</a>` : ''}
+      </div>
       <button class="btn btn-danger btn-sm" style="width:100%; margin-top:8px;" onclick="removeCheckIn('${record.id}')">✕ દૂર કરો</button>
     `;
     list.prepend(card);
+    adjustCounts(1);
+    updatePace();
+  }
 
+  function adjustCounts(delta) {
     const countEl = document.getElementById('attendanceCount');
     const statTotal = document.getElementById('statTotal');
-    if (countEl) countEl.textContent = String(Number(countEl.textContent) + 1);
-    if (statTotal) statTotal.textContent = String(Number(statTotal.textContent) + 1);
+    if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent) + delta));
+    if (statTotal) statTotal.textContent = String(Math.max(0, Number(statTotal.textContent) + delta));
+    const list = document.getElementById('attendanceList');
+    if (list && list.children.length === 0) document.getElementById('emptyState').style.display = '';
   }
+
+  // ---------- Live pace (check-ins in the last 5 minutes) ----------
+
+  function updatePace() {
+    const cutoff = Date.now() - 5 * 60 * 1000;
+    let count = 0;
+    document.querySelectorAll('.attendee-card[data-checkin-time]').forEach(el => {
+      const t = new Date(el.getAttribute('data-checkin-time')).getTime();
+      if (!isNaN(t) && t >= cutoff) count++;
+    });
+    const el = document.getElementById('statPace');
+    if (el) el.textContent = String(count);
+  }
+  setInterval(updatePace, 15000);
+  document.addEventListener('DOMContentLoaded', updatePace);
+
+  // ---------- Attendee list quick filter ----------
+
+  function filterAttendanceList() {
+    const q = document.getElementById('attendeeFilter').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('#attendanceList .attendee-card');
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const match = !q || (card.getAttribute('data-search') || '').includes(q);
+      card.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+    document.getElementById('noFilterMatch').style.display = (q && visibleCount === 0) ? '' : 'none';
+  }
+
+  // ---------- Manual search-as-you-type (name / phone lookup) ----------
+
+  let searchDebounceTimer = null;
+  function handleSearchInput() {
+    const input = document.getElementById('manualInput');
+    const dropdown = document.getElementById('searchDropdown');
+    const q = input.value.trim();
+
+    clearTimeout(searchDebounceTimer);
+    // A raw scanned/pasted ID won't look like a name search — skip the API call.
+    if (/^[a-f0-9-]{10,}$/i.test(q) || q.length < 2) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    searchDebounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/admin/api/search-records?q=${encodeURIComponent(q)}&eventId=${encodeURIComponent(eventId)}`);
+        const data = await res.json();
+        if (!data.success || !data.results.length) {
+          dropdown.style.display = 'none';
+          return;
+        }
+        dropdown.innerHTML = data.results.map(r => `
+          <div class="search-dropdown-item" data-id="${r.id}">
+            <div>
+              <strong>${escapeHtml(r.name)}</strong>
+              <span class="search-dropdown-sub">📞 ${escapeHtml(r.phone || '')}${r.location ? ' · 📍 ' + escapeHtml(r.location) : ''}</span>
+            </div>
+            ${r.alreadyCheckedIn ? '<span class="badge-checked">✓ ચેક-ઇન</span>' : ''}
+          </div>
+        `).join('');
+        dropdown.style.display = 'block';
+      } catch (e) {
+        dropdown.style.display = 'none';
+      }
+    }, 250);
+  }
+
+  document.addEventListener('click', function (e) {
+    const item = e.target.closest('.search-dropdown-item');
+    if (item) {
+      document.getElementById('searchDropdown').style.display = 'none';
+      document.getElementById('manualInput').value = '';
+      performCheckIn(item.getAttribute('data-id'), false);
+      return;
+    }
+    if (!e.target.closest('#manualInput') && !e.target.closest('#searchDropdown')) {
+      document.getElementById('searchDropdown').style.display = 'none';
+    }
+  });
 
   async function removeCheckIn(recordId) {
     if (!confirm('આ વપરાશકર્તાને હાજરીમાંથી દૂર કરવો છે?')) return;
@@ -449,12 +617,8 @@
         showMessage(data.message, 'success');
         const card = document.querySelector(`.attendee-card[data-record-id="${recordId}"]`);
         if (card) card.remove();
-        const countEl = document.getElementById('attendanceCount');
-        const statTotal = document.getElementById('statTotal');
-        if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent) - 1));
-        if (statTotal) statTotal.textContent = String(Math.max(0, Number(statTotal.textContent) - 1));
-        const list = document.getElementById('attendanceList');
-        if (list && list.children.length === 0) document.getElementById('emptyState').style.display = '';
+        adjustCounts(-1);
+        if (lastSuccessRecord && lastSuccessRecord.id === recordId) lastSuccessRecord = null;
       } else {
         showMessage(data.error, 'error');
       }
