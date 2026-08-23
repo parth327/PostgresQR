@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 
 const config = require('../config');
 const db = require('../db');
@@ -11,6 +12,63 @@ const { formatEventDate, formatDateTime } = require('../utils/datetime');
 const notify = require('../utils/notify');
 
 const router = express.Router();
+
+// ---- Photo upload (used when the main admin replaces a user's photo via
+// the edit-record form). Kept in memory, same convention as public.js. ----
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter(req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) return cb(null, true);
+    cb(new Error('ફક્ત ઈમેજ ફાઈલ (jpg, png, webp, gif) જ માન્ય છે.'));
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+// ==================== LOGIN RATE LIMITING ====================
+// Simple in-memory brute-force guard for /admin/login. Tracks failed
+// attempts per "ip + username" key; blocks further tries for LOCKOUT_MS
+// once MAX_ATTEMPTS is hit within WINDOW_MS. This resets if the server
+// restarts, which is an acceptable trade-off for a small single-instance
+// app — the goal is slowing down casual password guessing, not replacing
+// a full security stack.
+const loginAttempts = new Map(); // key -> { count, firstAttemptAt, lockedUntil }
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function loginKey(req, username) {
+  return `${req.ip}::${(username || '').trim().toLowerCase()}`;
+}
+
+function isLockedOut(key) {
+  const entry = loginAttempts.get(key);
+  if (!entry) return false;
+  if (entry.lockedUntil && Date.now() < entry.lockedUntil) return true;
+  if (entry.lockedUntil && Date.now() >= entry.lockedUntil) {
+    loginAttempts.delete(key); // lockout expired, start fresh
+    return false;
+  }
+  return false;
+}
+
+function recordFailedAttempt(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.firstAttemptAt > WINDOW_MS) {
+    loginAttempts.set(key, { count: 1, firstAttemptAt: now, lockedUntil: null });
+    return;
+  }
+  entry.count += 1;
+  if (entry.count >= MAX_ATTEMPTS) {
+    entry.lockedUntil = now + LOCKOUT_MS;
+  }
+  loginAttempts.set(key, entry);
+}
+
+function clearAttempts(key) {
+  loginAttempts.delete(key);
+}
 
 // Filter dropdown option lists — mirror the registration form's choices
 // (views/register.ejs) so admins can filter on exactly what users could pick.
@@ -72,6 +130,16 @@ router.post('/login', async (req, res, next) => {
   try {
     const { username, password, adminType } = req.body;
     const nextUrl = safeNext(req.body.next || req.query.next);
+    const key = loginKey(req, username);
+
+    if (isLockedOut(key)) {
+      const entry = loginAttempts.get(key);
+      const minsLeft = Math.max(1, Math.ceil((entry.lockedUntil - Date.now()) / 60000));
+      return res.render('admin-login', {
+        error: `ઘણા ખોટા પ્રયત્નો થયા. કૃપા કરીને ${minsLeft} મિનિટ પછી ફરી પ્રયત્ન કરો.`,
+        next: nextUrl,
+      });
+    }
 
     // ---- Event Admin login: checked against the event_admins DB table ----
     if (adminType === 'event') {
@@ -79,6 +147,7 @@ router.post('/login', async (req, res, next) => {
       const validPassword = eventAdmin && verifyPassword(password, eventAdmin.password_hash);
 
       if (eventAdmin && validPassword) {
+        clearAttempts(key);
         req.session.isAdmin = true;
         req.session.adminRole = 'event';
         req.session.adminUsername = eventAdmin.username;
@@ -86,6 +155,7 @@ router.post('/login', async (req, res, next) => {
         return res.redirect(nextUrl);
       }
 
+      recordFailedAttempt(key);
       return res.render('admin-login', { error: 'વપરાશકર્તા નામ અથવા પાસવર્ડ ખોટો છે.', next: nextUrl });
     }
 
@@ -101,12 +171,14 @@ router.post('/login', async (req, res, next) => {
     const validPassword = validUsername && verifyPassword(password, config.adminPasswordHash);
 
     if (validUsername && validPassword) {
+      clearAttempts(key);
       req.session.isAdmin = true;
       req.session.adminRole = 'main';
       req.session.adminUsername = username;
       return res.redirect(nextUrl);
     }
 
+    recordFailedAttempt(key);
     res.render('admin-login', { error: 'વપરાશકર્તા નામ અથવા પાસવર્ડ ખોટો છે.', next: nextUrl });
   } catch (err) {
     next(err);
@@ -127,16 +199,37 @@ router.post('/logout', (req, res) => {
 router.get('/dashboard', requireAdmin, async (req, res, next) => {
   try {
     const filters = extractRecordFilters(req.query);
-    const records = await db.queryRecords(filters);
+
+    const PAGE_SIZE = 25;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const filteredTotal = await db.countFilteredRecords(filters);
+    const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const offset = (safePage - 1) * PAGE_SIZE;
+
+    const records = await db.queryRecords(filters, { limit: PAGE_SIZE, offset });
     const total = await db.countRecords();
 
     // Get today's event for quick access
     const today = new Date().toISOString().split('T')[0];
     const todayEvent = await db.getEventByDate(today);
 
+    // Organisation-wide summary cards — only meaningful for the main admin,
+    // who oversees every event (an event admin only manages one).
+    let todayCheckins = null;
+    let upcomingEventsCount = null;
+    if (req.session.adminRole === 'main') {
+      todayCheckins = await db.getTodayCheckinsCountAcrossEvents();
+      upcomingEventsCount = await db.getUpcomingEventsCount();
+    }
+
     res.render('admin-dashboard', {
       records: records.map((r) => ({ ...r, qrUrl: `/qr/${r.id}` })),
       total,
+      filteredTotal,
+      page: safePage,
+      totalPages,
+      pageSize: PAGE_SIZE,
       filters,
       filterOptions: FILTER_OPTIONS,
       search: filters.search,
@@ -144,6 +237,8 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
       adminRole: req.session.adminRole,
       baseUrl: config.baseUrl,
       todayEvent,
+      todayCheckins,
+      upcomingEventsCount,
       isAdmin: true,
     });
   } catch (err) {
@@ -173,10 +268,133 @@ router.get('/record/:id', requireAdmin, async (req, res, next) => {
   }
 });
 
+// GET /admin/record/:id/edit -> edit form (main admin only — event admins
+// can view records but must not be able to change a user's saved details)
+router.get('/record/:id/edit', requireMainAdmin, async (req, res, next) => {
+  try {
+    const record = await db.getRecordById(req.params.id);
+    if (!record) return res.status(404).render('404', { message: 'આ રેકોર્ડ મળ્યો નહીં.' });
+
+    res.render('admin-record-form', {
+      record,
+      photoUrl: record.hasPhoto ? `/photo/${record.id}` : null,
+      error: null,
+      filterOptions: FILTER_OPTIONS,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/record/:id/edit -> save edited record (main admin only)
+router.post('/record/:id/edit', requireMainAdmin, async (req, res, next) => {
+  upload.single('photo')(req, res, async (err) => {
+    if (err) {
+      const record = await db.getRecordById(req.params.id).catch(() => null);
+      return res.render('admin-record-form', {
+        record: { ...record, ...req.body },
+        photoUrl: record && record.hasPhoto ? `/photo/${record.id}` : null,
+        error: err.message,
+        filterOptions: FILTER_OPTIONS,
+        adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
+        isAdmin: true,
+      });
+    }
+
+    try {
+      const existing = await db.getRecordById(req.params.id);
+      if (!existing) return res.status(404).render('404', { message: 'આ રેકોર્ડ મળ્યો નહીં.' });
+
+      const {
+        name, dob, gender, phone, whatsapp, email, location, locationOther, address,
+        houseNumber, society, landmark, education, occupation, notes, pincode,
+        interest, joinMedium, joinMediumOther, age,
+      } = req.body;
+
+      const missing = [];
+      if (!name || !name.trim()) missing.push('પૂરું નામ');
+      if (!phone || !phone.trim()) missing.push('ફોન નંબર');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (email && email.trim() && !emailRegex.test(email.trim())) missing.push('યોગ્ય ઈમેલ સરનામું');
+      if (!location || !location.trim()) missing.push('એરિયા');
+      if (location === 'અન્ય' && (!locationOther || !locationOther.trim())) missing.push('અન્ય એરિયા');
+
+      const ageNum = age ? parseInt(age, 10) : null;
+      if (age && (Number.isNaN(ageNum) || ageNum < 15 || ageNum > 100)) missing.push('યોગ્ય ઉંમર (15-100)');
+      if (pincode && pincode.trim() && !/^\d{6}$/.test(pincode.trim())) missing.push('યોગ્ય 6-અંકી પિનકોડ');
+
+      if (missing.length) {
+        return res.render('admin-record-form', {
+          record: { ...existing, ...req.body, id: req.params.id },
+          photoUrl: existing.hasPhoto ? `/photo/${existing.id}` : null,
+          error: `કૃપા કરીને આ ફિલ્ડ ચકાસો: ${missing.join(', ')}`,
+          filterOptions: FILTER_OPTIONS,
+          adminUsername: req.session.adminUsername,
+          adminRole: req.session.adminRole,
+          isAdmin: true,
+        });
+      }
+
+      const updated = {
+        name: name.trim(),
+        dob: dob || '',
+        gender: gender || '',
+        phone: phone.trim(),
+        whatsapp: (whatsapp || '').trim(),
+        email: (email || '').trim(),
+        location: location.trim(),
+        locationOther: location === 'અન્ય' ? (locationOther || '').trim() : '',
+        houseNumber: (houseNumber || '').trim(),
+        society: (society || '').trim(),
+        landmark: (landmark || '').trim(),
+        address: (address || '').trim(),
+        education: (education || '').trim(),
+        occupation: (occupation || '').trim(),
+        interest: (interest || '').trim(),
+        joinMedium: (joinMedium || '').trim(),
+        joinMediumOther: joinMedium === 'અન્ય' ? (joinMediumOther || '').trim() : '',
+        age: ageNum,
+        notes: (notes || '').trim(),
+        pincode: (pincode || '').trim() || null,
+        photoData: req.file ? req.file.buffer.toString('base64') : null,
+        photoMime: req.file ? req.file.mimetype : null,
+      };
+
+      await db.updateRecord(req.params.id, updated);
+
+      await db.logAudit({
+        adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
+        action: 'edit',
+        entityType: 'record',
+        entityId: req.params.id,
+        details: `સંપાદિત: ${updated.name} (${updated.phone})`,
+      });
+
+      res.redirect(`/admin/record/${req.params.id}`);
+    } catch (dbErr) {
+      next(dbErr);
+    }
+  });
+});
+
 // POST /admin/delete/:id -> delete a record (main admin only)
 router.post('/delete/:id', requireMainAdmin, async (req, res, next) => {
   try {
+    const record = await db.getRecordById(req.params.id);
     await db.deleteRecord(req.params.id);
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'delete',
+      entityType: 'record',
+      entityId: req.params.id,
+      details: record ? `ડિલીટ: ${record.name} (${record.phone})` : null,
+    });
     res.redirect('/admin/dashboard');
   } catch (err) {
     next(err);
@@ -228,6 +446,15 @@ router.post('/event-admins', requireMainAdmin, async (req, res, next) => {
       eventId,
     });
 
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'create',
+      entityType: 'event_admin',
+      entityId: username.trim(),
+      details: `નવો ઇવેન્ટ એડમિન બનાવ્યો: ${username.trim()}`,
+    });
+
     res.redirect('/admin/event-admins');
   } catch (err) {
     next(err);
@@ -240,6 +467,14 @@ router.post('/event-admins/:id/password', requireMainAdmin, async (req, res, nex
     const { password } = req.body;
     if (password && password.trim()) {
       await db.updateEventAdminPassword(req.params.id, hashPassword(password));
+      await db.logAudit({
+        adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
+        action: 'password_reset',
+        entityType: 'event_admin',
+        entityId: req.params.id,
+        details: 'ઇવેન્ટ એડમિનનો પાસવર્ડ રિસેટ કર્યો',
+      });
     }
     res.redirect('/admin/event-admins');
   } catch (err) {
@@ -253,6 +488,14 @@ router.post('/event-admins/:id/event', requireMainAdmin, async (req, res, next) 
     const { eventId } = req.body;
     if (eventId) {
       await db.updateEventAdminEvent(req.params.id, eventId);
+      await db.logAudit({
+        adminUsername: req.session.adminUsername,
+        adminRole: req.session.adminRole,
+        action: 'reassign',
+        entityType: 'event_admin',
+        entityId: req.params.id,
+        details: `નવા ઇવેન્ટ પર ફેરવ્યો: ${eventId}`,
+      });
     }
     res.redirect('/admin/event-admins');
   } catch (err) {
@@ -264,7 +507,30 @@ router.post('/event-admins/:id/event', requireMainAdmin, async (req, res, next) 
 router.post('/event-admins/:id/delete', requireMainAdmin, async (req, res, next) => {
   try {
     await db.deleteEventAdmin(req.params.id);
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'delete',
+      entityType: 'event_admin',
+      entityId: req.params.id,
+      details: null,
+    });
     res.redirect('/admin/event-admins');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/audit-log -> recent sensitive-action history (main admin only)
+router.get('/audit-log', requireMainAdmin, async (req, res, next) => {
+  try {
+    const entries = await db.getAuditLog({ limit: 150 });
+    res.render('admin-audit-log', {
+      entries,
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      isAdmin: true,
+    });
   } catch (err) {
     next(err);
   }
@@ -337,6 +603,15 @@ router.post('/events/create', requireMainAdmin, async (req, res, next) => {
       contact1Mobile: contact1Mobile || '',
       contact2Name: contact2Name || '',
       contact2Mobile: contact2Mobile || '',
+    });
+
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'create',
+      entityType: 'event',
+      entityId: null,
+      details: `નવો ઇવેન્ટ બનાવ્યો: ${eventName}`,
     });
 
     res.redirect('/admin/events');
@@ -417,6 +692,15 @@ router.post('/events/:id/edit', requireMainAdmin, async (req, res, next) => {
       contact1Mobile: contact1Mobile || '',
       contact2Name: contact2Name || '',
       contact2Mobile: contact2Mobile || '',
+    });
+
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'edit',
+      entityType: 'event',
+      entityId: req.params.id,
+      details: `સંપાદિત: ${eventName}`,
     });
 
     res.redirect(`/admin/events/${req.params.id}`);
@@ -510,8 +794,17 @@ router.get('/dashboard/export', requireAdmin, async (req, res, next) => {
 // POST /admin/events/:id/delete -> delete an event (main admin only)
 router.post('/events/:id/delete', requireMainAdmin, async (req, res, next) => {
   try {
+    const eventBeforeDelete = await db.getEventById(req.params.id);
     const deleted = await db.deleteEvent(req.params.id);
     if (!deleted) return res.status(404).render('404', { message: 'ઇવેન્ટ મળ્યો નહીં' });
+    await db.logAudit({
+      adminUsername: req.session.adminUsername,
+      adminRole: req.session.adminRole,
+      action: 'delete',
+      entityType: 'event',
+      entityId: req.params.id,
+      details: eventBeforeDelete ? `ડિલીટ: ${eventBeforeDelete.event_name}` : null,
+    });
     res.redirect('/admin/events?deleted=1');
   } catch (err) {
     next(err);
@@ -1000,6 +1293,36 @@ router.get('/checkin', requireAdmin, requireEventAccess, async (req, res, next) 
       adminRole: req.session.adminRole,
       isAdmin: true,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// API endpoint: GET /admin/api/search-records?q=...
+// Powers the check-in screen's manual name/phone lookup, since typing a
+// full record UUID by hand isn't practical. Returns a short list of
+// candidate matches, each flagged with whether they're already checked in
+// for this event.
+router.get('/api/search-records', requireAdmin, requireEventAccess, async (req, res, next) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (q.length < 2) {
+      return res.json({ success: true, results: [] });
+    }
+
+    let event;
+    if (req.query.eventId) {
+      event = await db.getEventById(req.query.eventId);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      event = await db.getEventByDate(today);
+    }
+    if (!event) {
+      return res.json({ success: false, error: 'No active event found' });
+    }
+
+    const results = await db.searchRecordsForCheckin(event.id, q, 8);
+    return res.json({ success: true, results });
   } catch (err) {
     next(err);
   }
