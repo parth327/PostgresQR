@@ -68,8 +68,41 @@
     <% if (isAdmin) { %>
       <div class="actions-row">
         <img src="<%= qrUrl %>" class="mini-qr" alt="qr" style="width:60px;height:60px;" />
-        <a href="/admin/dashboard" class="btn btn-secondary">ડેશબોર્ડ પર પાછા જાઓ</a>
+        <a href="<%= qrUrl %>" download="qr-<%= record.name.replace(/\s+/g,'-') %>.png" class="btn btn-secondary">⬇ QR ડાઉનલોડ</a>
+        <% if (typeof adminRole !== 'undefined' && adminRole === 'main' && record.email) { %>
+          <button type="button" id="send-qr-btn" class="btn btn-secondary" onclick="sendQrEmail()">📧 QR Email મોકલો</button>
+        <% } %>
+        <a href="/admin/dashboard" class="btn btn-secondary">← ડેશબોર્ડ</a>
+        <% if (typeof adminRole !== 'undefined' && adminRole === 'main') { %>
+          <form action="/admin/delete/<%= record.id %>" method="POST" style="display:inline;"
+                onsubmit="return confirm('આ રેકોર્ડ કાયમ માટે ડિલીટ કરવો છે?');">
+            <button type="submit" class="btn btn-danger">ડિલીટ</button>
+          </form>
+        <% } %>
       </div>
+      <% if (typeof adminRole !== 'undefined' && adminRole === 'main' && record.email) { %>
+      <div id="qr-send-result" style="display:none;margin-top:10px;" class="alert"></div>
+      <script>
+        function sendQrEmail() {
+          var btn = document.getElementById('send-qr-btn');
+          var result = document.getElementById('qr-send-result');
+          btn.disabled = true; btn.textContent = '⏳ Sending...';
+          fetch('/admin/send-qr/<%= record.id %>', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(function(r){ return r.json(); })
+            .then(function(data) {
+              btn.disabled = false; btn.textContent = '📧 QR Email મોકલો';
+              result.style.display = '';
+              result.className = 'alert ' + (data.success ? 'alert-success' : 'alert-error');
+              result.textContent = data.success ? '✅ QR Email sent to <%= record.email %>' : '❌ ' + (data.error || 'Failed');
+            })
+            .catch(function(e) {
+              btn.disabled = false; btn.textContent = '📧 QR Email મોકલો';
+              result.style.display = ''; result.className = 'alert alert-error';
+              result.textContent = '❌ Network error';
+            });
+        }
+      </script>
+      <% } %>
     <% } %>
   </div>
 </div>
