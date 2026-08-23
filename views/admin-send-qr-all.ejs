@@ -1,0 +1,81 @@
+<%- include('partials/header', { title: 'Bulk QR Email', isAdmin: true, adminUsername, adminRole }) %>
+
+<div class="container" style="max-width:640px;margin:40px auto;padding:0 16px;">
+  <div class="card" style="border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.1);">
+
+    <div style="background:linear-gradient(135deg,#ff8a00,#e65c00);padding:28px 32px;color:#fff;">
+      <h1 style="margin:0;font-size:22px;font-weight:800;">📧 બધા Users ને QR Email મોકલો</h1>
+      <p style="margin:8px 0 0;opacity:0.85;font-size:14px;">તમામ નોંધાયેલ Users ને તેમનો QR Code ઈમેઇલ દ્વારા મોકલો</p>
+    </div>
+
+    <div style="padding:28px 32px;">
+
+      <% if (result) { %>
+        <div class="alert <%= result.failed > 0 ? 'alert-warning' : 'alert-success' %>" style="margin-bottom:24px;border-radius:12px;padding:16px 20px;">
+          <strong>✅ Bulk QR Send Complete</strong><br>
+          <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+            <div style="background:rgba(0,150,80,0.1);border-radius:8px;padding:12px;">
+              <div style="font-size:24px;font-weight:800;color:#008050;"><%= result.sent %></div>
+              <div style="font-size:12px;color:#555;">Sent</div>
+            </div>
+            <div style="background:rgba(255,100,0,0.1);border-radius:8px;padding:12px;">
+              <div style="font-size:24px;font-weight:800;color:#e65c00;"><%= result.failed %></div>
+              <div style="font-size:12px;color:#555;">Failed</div>
+            </div>
+            <div style="background:rgba(100,100,100,0.1);border-radius:8px;padding:12px;">
+              <div style="font-size:24px;font-weight:800;color:#555;"><%= result.skipped %></div>
+              <div style="font-size:12px;color:#555;">Skipped</div>
+            </div>
+          </div>
+          <% if (result.errors && result.errors.length > 0) { %>
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer;font-size:13px;color:#e65c00;">Error Details (<%= result.errors.length %>)</summary>
+              <ul style="margin:8px 0 0;padding-left:18px;font-size:12px;color:#555;">
+                <% result.errors.forEach(e => { %><li><%= e %></li><% }); %>
+              </ul>
+            </details>
+          <% } %>
+        </div>
+      <% } %>
+
+      <!-- Stats -->
+      <div style="background:#fff8f0;border:1px solid rgba(230,92,0,0.2);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <h3 style="margin:0 0 14px;font-size:15px;color:#2c1a0e;">📊 ઝલક</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+          <div>
+            <div style="font-size:28px;font-weight:800;color:#e65c00;"><%= total %></div>
+            <div style="font-size:12px;color:#666;">કુલ Registrations</div>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:#008050;"><%= withEmail %></div>
+            <div style="font-size:12px;color:#666;">Email સાથે</div>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:#999;"><%= withoutEmail %></div>
+            <div style="font-size:12px;color:#666;">Email વગર</div>
+          </div>
+        </div>
+      </div>
+
+      <% if (!result) { %>
+        <div class="alert alert-warning" style="border-radius:10px;padding:14px 18px;margin-bottom:20px;background:#fff3cd;border:1px solid #ffc107;">
+          ⚠️ <strong>સાવધ:</strong> આ action <strong><%= withEmail %> users</strong> ને email મોકલશે. ખૂબ ધીમી process છે — page ખુલ્લું રાખો.
+        </div>
+
+        <form method="POST" action="/admin/send-qr-all" onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Sending... Please wait';">
+          <button type="submit" class="btn btn-glow" style="width:100%;padding:14px;font-size:15px;">
+            📧 <%= withEmail %> Users ને QR Email મોકલો
+          </button>
+        </form>
+      <% } else { %>
+        <a href="/admin/send-qr-all" class="btn btn-secondary" style="display:block;text-align:center;padding:12px;">ફરી ચકાસો</a>
+      <% } %>
+
+      <div style="margin-top:16px;text-align:center;">
+        <a href="/admin/dashboard" style="color:#e65c00;font-size:14px;">← Dashboard પર પાછા જાઓ</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
