@@ -114,6 +114,25 @@ async function init() {
       );
     `);
 
+    // Audit log (new) — records sensitive admin actions (record edits/
+    // deletes, event-admin management, event changes) so the main admin
+    // can see who changed what and when.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id TEXT PRIMARY KEY,
+        admin_username TEXT NOT NULL,
+        admin_role TEXT NOT NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT,
+        details TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+    `);
+
     console.log('Database ready (all tables checked/created).');
   } catch (err) {
     console.error('Database init error:', err);
@@ -211,6 +230,78 @@ async function addRecord(record) {
   return record;
 }
 
+async function updateRecord(id, record) {
+  // Photo is only replaced when a new one is provided (photoData/photoMime
+  // both set); otherwise the existing stored photo is left untouched.
+  if (record.photoData) {
+    await pool.query(
+      `UPDATE records SET
+         name = $1, dob = $2, gender = $3, phone = $4, whatsapp = $5, email = $6,
+         location = $7, location_other = $8, house_number = $9, society = $10,
+         landmark = $11, address = $12, education = $13, occupation = $14,
+         interest = $15, join_medium = $16, join_medium_other = $17, age = $18,
+         notes = $19, pincode = $20, photo_data = $21, photo_mime = $22
+       WHERE id = $23`,
+      [
+        record.name, record.dob || null, record.gender || null, record.phone,
+        record.whatsapp || null, record.email || null, record.location,
+        record.locationOther || null, record.houseNumber || null, record.society || null,
+        record.landmark || null, record.address || null, record.education || null,
+        record.occupation || null, record.interest || null, record.joinMedium || null,
+        record.joinMediumOther || null, record.age || null, record.notes || null,
+        record.pincode || null, record.photoData, record.photoMime, id,
+      ]
+    );
+  } else {
+    await pool.query(
+      `UPDATE records SET
+         name = $1, dob = $2, gender = $3, phone = $4, whatsapp = $5, email = $6,
+         location = $7, location_other = $8, house_number = $9, society = $10,
+         landmark = $11, address = $12, education = $13, occupation = $14,
+         interest = $15, join_medium = $16, join_medium_other = $17, age = $18,
+         notes = $19, pincode = $20
+       WHERE id = $21`,
+      [
+        record.name, record.dob || null, record.gender || null, record.phone,
+        record.whatsapp || null, record.email || null, record.location,
+        record.locationOther || null, record.houseNumber || null, record.society || null,
+        record.landmark || null, record.address || null, record.education || null,
+        record.occupation || null, record.interest || null, record.joinMedium || null,
+        record.joinMediumOther || null, record.age || null, record.notes || null,
+        record.pincode || null, id,
+      ]
+    );
+  }
+  return getRecordById(id);
+}
+
+// Quick name/phone/whatsapp lookup used by the check-in screen's manual
+// search box (an admin typing a few letters of a name or digits of a phone
+// number, since typing a full UUID by hand isn't realistic). Flags whether
+// each match is already checked in for the given event so the dropdown can
+// show a ✓ badge before the admin even clicks it.
+async function searchRecordsForCheckin(eventId, term, limit = 8) {
+  const like = `%${term.trim()}%`;
+  const { rows } = await pool.query(
+    `SELECT r.id, r.name, r.phone, r.whatsapp, r.location, r.location_other,
+            (ea.id IS NOT NULL) AS already_checked_in
+     FROM records r
+     LEFT JOIN event_attendance ea ON ea.record_id = r.id AND ea.event_id = $2
+     WHERE r.name ILIKE $1 OR r.phone ILIKE $1 OR r.whatsapp ILIKE $1
+     ORDER BY (ea.id IS NOT NULL) ASC, r.name ASC
+     LIMIT $3`,
+    [like, eventId, limit]
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    whatsapp: row.whatsapp || '',
+    location: row.location === 'અન્ય' ? (row.location_other || row.location) : row.location,
+    alreadyCheckedIn: row.already_checked_in,
+  }));
+}
+
 async function deleteRecord(id) {
   const result = await pool.query('DELETE FROM records WHERE id = $1', [id]);
   return result.rowCount > 0;
@@ -237,7 +328,7 @@ async function searchRecords(term) {
 // (area/education/interest/joinMedium/gender/age range/registration date
 // range) on the admin dashboard, building a single parameterized WHERE
 // clause. Passing no filters returns every record, same as getAllRecords().
-async function queryRecords(filters = {}) {
+function buildRecordFilterClause(filters = {}) {
   const { search, location, education, interest, joinMedium, gender, ageMin, ageMax, dateFrom, dateTo } = filters;
   const clauses = [];
   const params = [];
@@ -265,8 +356,42 @@ async function queryRecords(filters = {}) {
   if (dateTo) add('created_at <= ?', new Date(`${dateTo}T23:59:59.999`));
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const { rows } = await pool.query(`SELECT * FROM records ${where} ORDER BY created_at DESC`, params);
+  return { where, params };
+}
+
+// Total records matching the filter panel — used to compute pagination
+// (total pages / "X-Y of Z" label) without pulling every row.
+async function countFilteredRecords(filters = {}) {
+  const { where, params } = buildRecordFilterClause(filters);
+  const { rows } = await pool.query(`SELECT COUNT(*)::int AS count FROM records ${where}`, params);
+  return rows[0].count;
+}
+
+// pagination is optional — { limit, offset } — so existing callers that want
+// every matching row (e.g. the Excel/CSV export) can keep calling this with
+// just filters and get the full result set.
+async function queryRecords(filters = {}, pagination = {}) {
+  const { where, params } = buildRecordFilterClause(filters);
+  let sql = `SELECT * FROM records ${where} ORDER BY created_at DESC`;
+  const qparams = [...params];
+  if (pagination.limit != null) {
+    qparams.push(pagination.limit);
+    sql += ` LIMIT $${qparams.length}`;
+  }
+  if (pagination.offset != null) {
+    qparams.push(pagination.offset);
+    sql += ` OFFSET $${qparams.length}`;
+  }
+  const { rows } = await pool.query(sql, qparams);
   return rows.map(rowToRecord);
+}
+
+// Used by the registration form's live duplicate-phone check. Returns only
+// a boolean-friendly minimal shape (id) — never the registrant's name or
+// other details, since this endpoint is reachable without logging in.
+async function findRecordByPhone(phone) {
+  const { rows } = await pool.query('SELECT id FROM records WHERE phone = $1 LIMIT 1', [phone]);
+  return rows[0] || null;
 }
 
 // Registered users who have NOT checked in to a given event yet — used as a
@@ -590,6 +715,25 @@ async function getEventStats(eventId) {
   return rows[0];
 }
 
+// Check-ins across ALL events for "today" (IST) — used for the main admin's
+// dashboard summary card, since a single event's stats don't show the
+// organisation-wide picture when multiple events run close together.
+async function getTodayCheckinsCountAcrossEvents() {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM event_attendance
+     WHERE (checked_in_at AT TIME ZONE 'Asia/Kolkata')::date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date`
+  );
+  return rows[0].count;
+}
+
+// Events scheduled today or later — dashboard summary card.
+async function getUpcomingEventsCount() {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM events WHERE event_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date`
+  );
+  return rows[0].count;
+}
+
 // ==================== EVENT ADMIN FUNCTIONS (NEW) ====================
 
 async function createEventAdmin({ username, passwordHash, eventId }) {
@@ -629,6 +773,30 @@ async function deleteEventAdmin(id) {
   return result.rowCount > 0;
 }
 
+// ==================== AUDIT LOG (NEW) ====================
+
+// Records a sensitive admin action. Never throws — a logging failure should
+// never break the actual admin action that triggered it.
+async function logAudit({ adminUsername, adminRole, action, entityType, entityId, details }) {
+  try {
+    await pool.query(
+      `INSERT INTO audit_log (id, admin_username, admin_role, action, entity_type, entity_id, details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [crypto.randomUUID(), adminUsername || 'unknown', adminRole || 'unknown', action, entityType, entityId || null, details || null]
+    );
+  } catch (err) {
+    console.error('Audit log write failed:', err.message);
+  }
+}
+
+async function getAuditLog({ limit = 100 } = {}) {
+  const { rows } = await pool.query(
+    `SELECT * FROM audit_log ORDER BY created_at DESC LIMIT $1`,
+    [limit]
+  );
+  return rows;
+}
+
 module.exports = {
   init,
   // Record functions
@@ -637,10 +805,14 @@ module.exports = {
   getPhoto,
   getQr,
   addRecord,
+  updateRecord,
   deleteRecord,
   countRecords,
+  countFilteredRecords,
   searchRecords,
+  searchRecordsForCheckin,
   queryRecords,
+  findRecordByPhone,
   getUsersNotCheckedIn,
   // Event functions
   createEvent,
@@ -662,6 +834,8 @@ module.exports = {
   getAttendanceByUser,
   removeCheckIn,
   getEventStats,
+  getTodayCheckinsCountAcrossEvents,
+  getUpcomingEventsCount,
   // Event admin functions
   createEventAdmin,
   getEventAdminByUsername,
@@ -669,4 +843,7 @@ module.exports = {
   updateEventAdminPassword,
   updateEventAdminEvent,
   deleteEventAdmin,
+  // Audit log functions
+  logAudit,
+  getAuditLog,
 };
