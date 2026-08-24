@@ -28,7 +28,7 @@
         <div class="event-card-top">
           <div style="flex:1;">
             <h3><%= event.event_name %></h3>
-            <p class="event-date">📅 <%= formatEventDateGu(event.event_date) %><% if (event.event_time) { %> • 🕒 <%= event.event_time %><% } %></p>
+            <p class="event-date">📅 <%= formatEventDateGu(event.event_date) %><% if (event.event_time) { %> • 🕒 <%= formatEventTimeGu(event.event_time) %><% } %></p>
             <p class="event-meta">📍 <strong>સ્થળ:</strong> <%= event.location || 'લાગુ પડતું નથી' %></p>
             <% if (event.contact1_name || event.contact2_name) { %>
               <p class="event-meta">📞 <strong>સંપર્ક:</strong>
