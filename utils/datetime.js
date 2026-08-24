@@ -94,6 +94,47 @@ function formatDateTimeGu(value) {
   return `${formatEventDateGu(value)}, ${formatTimeGu(value)}`;
 }
 
+// ISO "YYYY-MM-DD" for a date/timestamp value, built from IST-local parts
+// (not value.toISOString(), which reads UTC and can land on the wrong day
+// whenever the server process itself isn't running in UTC).
+function formatEventDateISO(value) {
+  if (!value) return '';
+  const p = istParts(value);
+  const mm = String(p.month).padStart(2, '0');
+  const dd = String(p.day).padStart(2, '0');
+  return `${p.year}-${mm}-${dd}`;
+}
+
+// Time-of-day words used throughout Gujarat for referring to a clock time,
+// e.g. "8:00" -> "સવારે ૮ કલાકે", "17:30" -> "સાંજે ૫ કલાક ૩૦ મિનિટે".
+// `timeStr` is the plain "HH:MM" (24-hour) string stored for an event,
+// independent of any particular date, so this does not go through istParts.
+function formatEventTimeGu(timeStr) {
+  if (!timeStr) return '';
+  const m = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+
+  let hour = parseInt(m[1], 10);
+  const minute = parseInt(m[2], 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return '';
+  hour = ((hour % 24) + 24) % 24;
+
+  let period;
+  if (hour >= 4 && hour < 12) period = 'સવારે';
+  else if (hour >= 12 && hour < 16) period = 'બપોરે';
+  else if (hour >= 16 && hour < 20) period = 'સાંજે';
+  else period = 'રાત્રે';
+
+  let hour12 = hour % 12;
+  if (hour12 === 0) hour12 = 12;
+
+  const hourGu = toGujaratiDigits(hour12);
+  if (minute === 0) return `${period} ${hourGu} કલાકે`;
+
+  const minuteGu = toGujaratiDigits(minute);
+  return `${period} ${hourGu} કલાક ${minuteGu} મિનિટે`;
+}
+
 module.exports = {
   TIME_ZONE,
   formatEventDate,
@@ -104,4 +145,6 @@ module.exports = {
   formatShortDateGu,
   formatDateTimeGu,
   formatTimeGu,
+  formatEventDateISO,
+  formatEventTimeGu,
 };
