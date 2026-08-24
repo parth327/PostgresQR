@@ -24,6 +24,26 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
+// db.getAllEvents() orders by event_date DESC (newest-added first), which
+// suits the admin's management screens but is the wrong order for the
+// public page: visitors should see the *soonest upcoming* event first,
+// since that's the one the countdown/hero content revolves around.
+// Sorting here (rather than in db.js) keeps the admin listing untouched.
+function sortEventsForPublicPage(events) {
+  const dateKey = (ev) => {
+    const iso = ev.event_date instanceof Date
+      ? ev.event_date.toISOString().split('T')[0]
+      : String(ev.event_date || '').split('T')[0];
+    return `${iso}T${ev.event_time || '00:00'}`;
+  };
+  return [...events].sort((a, b) => dateKey(a).localeCompare(dateKey(b)));
+}
+
+async function getPublicEvents() {
+  const events = await db.getAllEvents();
+  return sortEventsForPublicPage(events);
+}
+
 // GET /  -> redirect to register (friendly root)
 router.get('/', (req, res) => {
   res.redirect('/register');
@@ -32,7 +52,7 @@ router.get('/', (req, res) => {
 // GET /register -> show the public registration form (no login required)
 router.get('/register', async (req, res, next) => {
   try {
-    const events = await db.getAllEvents();
+    const events = await getPublicEvents();
     res.render('register', { error: null, formData: {}, events });
   } catch (err) {
     next(err);
@@ -43,7 +63,7 @@ router.get('/register', async (req, res, next) => {
 router.post('/register', (req, res) => {
   upload.single('photo')(req, res, async (err) => {
     if (err) {
-      const events = await db.getAllEvents().catch(() => []);
+      const events = await getPublicEvents().catch(() => []);
       return res.render('register', { error: err.message, formData: req.body, events });
     }
 
@@ -73,7 +93,7 @@ router.post('/register', (req, res) => {
       else if (!/^\d{6}$/.test(pincode.trim())) missing.push('યોગ્ય 6-અંકી પિનકોડ');
 
       if (missing.length) {
-        const events = await db.getAllEvents().catch(() => []);
+        const events = await getPublicEvents().catch(() => []);
         return res.render('register', {
           error: `કૃપા કરીને આ ફિલ્ડ ભરો: ${missing.join(', ')}`,
           formData: req.body,
