@@ -40,7 +40,10 @@
       <p><strong>વર્ણન:</strong> <%= event.event_description %></p>
     <% } %>
   </div>
-
+<div class="actions-row" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+    <a href="/admin/checkin?eventId=<%= event.id %>" class="btn">➕ ચેક-ઇન ચાલુ રાખો</a>
+    <a href="/admin/events" class="btn btn-secondary">← ઇવેન્ટ્સ પર પાછા જાઓ</a>
+  </div>
   <div class="stat-cards">
     <div class="stat-card" style="--d:1;">
       <div class="num"><%= stats.total_checked_in %></div>
@@ -168,10 +171,7 @@
     </div>
   <% } %>
 
-  <div class="actions-row" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
-    <a href="/admin/checkin?eventId=<%= event.id %>" class="btn">➕ ચેક-ઇન ચાલુ રાખો</a>
-    <a href="/admin/events" class="btn btn-secondary">← ઇવેન્ટ્સ પર પાછા જાઓ</a>
-  </div>
+  
 </div>
 
 <%- include('partials/footer') %>
