@@ -18,7 +18,7 @@
   <div class="info-card">
     <p><strong>📅 તારીખ:</strong> <%= formatEventDateGu(event.event_date) %></p>
     <% if (event.event_time) { %>
-      <p><strong>🕒 સમય:</strong> <%= event.event_time %></p>
+      <p><strong>🕒 સમય:</strong> <%= formatEventTimeGu(event.event_time) %></p>
     <% } %>
     <% if (event.location) { %>
       <p><strong>📍 સ્થળ:</strong> <%= event.location %></p>
