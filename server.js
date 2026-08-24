@@ -9,6 +9,7 @@ const adminRoutes = require('./routes/admin');
 const {
   formatEventDate, formatShortDate, formatDateTime, formatTime,
   formatEventDateGu, formatShortDateGu, formatDateTimeGu, formatTimeGu,
+  formatEventDateISO, formatEventTimeGu,
 } = require('./utils/datetime');
 
 const app = express();
@@ -30,6 +31,8 @@ app.locals.formatEventDateGu = formatEventDateGu;
 app.locals.formatShortDateGu = formatShortDateGu;
 app.locals.formatDateTimeGu = formatDateTimeGu;
 app.locals.formatTimeGu = formatTimeGu;
+app.locals.formatEventDateISO = formatEventDateISO;
+app.locals.formatEventTimeGu = formatEventTimeGu;
 
 // Body parsing
 app.use(express.urlencoded({ extended: true }));
