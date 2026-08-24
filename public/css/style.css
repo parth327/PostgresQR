@@ -1607,8 +1607,45 @@ body.page-register .topbar { display: none; }
 .ys-divider { color: rgba(0,0,0,0.15); }
 .ys-copyright { font-size: 0.82rem; color: var(--text-light); }
 
+/* ---------- floating "Register" quick-action button (mobile-first) ---------- */
+.ys-fab-register {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: var(--grad-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-decoration: none;
+  box-shadow: 0 10px 26px -6px rgba(230,92,0,0.55);
+  opacity: 0;
+  transform: translateY(16px) scale(0.92);
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(.165,.84,.44,1), box-shadow 0.2s ease;
+}
+.ys-fab-register.ys-fab-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.ys-fab-register:hover,
+.ys-fab-register:focus-visible {
+  box-shadow: 0 14px 32px -6px rgba(230,92,0,0.7);
+  transform: translateY(-3px) scale(1.03);
+}
+.ys-fab-icon { font-size: 1.05rem; line-height: 1; }
+@media (max-width: 480px) {
+  .ys-fab-register { right: 14px; bottom: 14px; padding: 12px 16px; font-size: 0.85rem; }
+}
+
 /* ---------- reveal-on-scroll ---------- */
-.ys-reveal { opacity: 0; transform: translateY(36px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(.165,.84,.44,1); }
+.ys-reveal { opacity: 0; transform: translateY(36px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(.165,.84,.44,1); transition-delay: var(--d, 0s); }
 .ys-reveal.ys-revealed { opacity: 1; transform: translateY(0); }
 .ys-reveal.ys-delay-1 { transition-delay: 0.15s; }
 
@@ -1637,6 +1674,13 @@ body.page-register .topbar { display: none; }
   box-shadow: 0 4px 16px -6px rgba(230,92,0,0.15);
   position: relative;
   overflow: hidden;
+  transition: transform 0.28s cubic-bezier(.165,.84,.44,1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+.event-mini-card:hover,
+.event-mini-card:focus-within {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 30px -10px rgba(230,92,0,0.32);
+  border-color: rgba(230,92,0,0.4);
 }
 .event-mini-card::before {
   content: '';
@@ -1652,6 +1696,9 @@ body.page-register .topbar { display: none; }
   margin-bottom: 10px;
 }
 .event-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 8px;
@@ -1664,6 +1711,19 @@ body.page-register .topbar { display: none; }
 .status-upcoming { background: rgba(230,92,0,0.12); color: #e65c00; }
 .status-ongoing  { background: rgba(16,185,129,0.12); color: #059669; }
 .status-completed{ background: rgba(100,116,139,0.12); color: #64748b; }
+.event-mini-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 0 rgba(5,150,105,0.5);
+  animation: ysLivePulse 1.6s ease-out infinite;
+}
+@keyframes ysLivePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(5,150,105,0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(5,150,105,0); }
+  100% { box-shadow: 0 0 0 0 rgba(5,150,105,0); }
+}
 .event-mini-name {
   font-size: 0.95rem;
   font-weight: 800;
@@ -1699,6 +1759,10 @@ body.page-register .topbar { display: none; }
   border-radius: 8px;
   padding: 6px 4px;
   text-align: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.event-mini-card:hover .cdb {
+  background: rgba(230,92,0,0.12);
 }
 .cdn {
   display: block;
@@ -1706,6 +1770,8 @@ body.page-register .topbar { display: none; }
   font-weight: 800;
   color: var(--primary);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.18s ease;
 }
 .cdl {
   display: block;
@@ -1714,6 +1780,24 @@ body.page-register .topbar { display: none; }
   margin-top: 2px;
   font-weight: 600;
 }
+.event-mini-live-msg {
+  margin-top: 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(5,150,105,0.14));
+  color: #065f46;
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-align: center;
+  animation: ysFadeInUp 0.4s ease-out;
+}
+@keyframes ysFadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 @media (max-width: 500px) {
-  .all-events-grid { grid-template-columns: 1fr; }
+  .all-events-grid { grid-template-columns: 1fr; padding: 0 12px; }
+  .event-mini-card { padding: 14px; }
+  .cdn { font-size: 1rem; }
+  .cdb { padding: 6px 2px; }
 }
